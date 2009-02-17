@@ -1,0 +1,57 @@
+==============================================================================
+md5copy
+=======
+
+Version 0.1, released 2008-07-20
+
+This program will copy one or more files / directories to a destination,
+and compute an md5 checksum on the fly. Currently the .md5 files are generated
+per directory.
+
+
+------------------------------------------------------------------------------
+Usage
+-----
+
+The source files / directories have to be specified on the command line. Then
+a dialog will pop up asking you for the destination, unless it was also
+specified on the command line (-d switch).
+
+This should allow easy bindings in file managers.
+
+
+W A R N I N G:
+  Similarly to how `cp' works, md5copy currently overwrites destination
+  files without warning!
+
+
+The checksum will be saved in one .md5 file per directory. So if you have a
+layout like:
+a/
+  sub1/
+    (some files)
+  sub2/
+    (some files)
+
+you would end up with the following checksum files:
+a/sub1/sub1.md5
+a/sub2/sub2.md5
+
+Note that there is no a/a.md5, because there were no files (just directories)
+inside of a/.
+
+
+I recommend the program `cfv' to verify files. cfv has the `-r' switch, which
+allows you to verify a whole directory structure copied with md5copy.
+
+
+------------------------------------------------------------------------------
+Requirements
+------------
+
+md5copy requires the following libraries to be installed:
+ * gtk+ toolkit:
+    it was tested with gtk 2.12.11, but probably gtk 2.10 would suffice
+ * mhash library:
+    it was tested with 0.9.9 (libmhash2 in Debian)
+    the manpage refers to 0.9.2, so I assume that's the minimum required
