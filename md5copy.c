@@ -1,6 +1,6 @@
-/* $Id: md5copy.c 39 2008-07-20 19:18:04Z squisher $ */
+/* $Id: md5copy.c 53 2009-02-16 09:39:17Z squisher $ */
 /*
- *  Copyright (c) 2008 David Mohr <david@mcbf.net>
+ *  Copyright (c) 2008-2009 David Mohr <david@mcbf.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,47 +18,30 @@
  */
 
 #include <gtk/gtk.h>
+#include <glib.h>
 #include <glib/gstdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <mhash.h>
-#include <stdarg.h>
 
 #include "progress-dialog.h"
 #include "global.h"
 #include "ring-buffer.h"
+#include "thread-copy.h"
+#include "thread-hash.h"
+#include "error.h"
 
 #define PROG_NAME "md5copy"
-#define VERSION "0.1"
-
-
-typedef struct {
-  int argc;
-  char **argv;
-  ProgressDialog *progress;
-} ThreadCopyParams;
+#define VERSION "0.2"
 
 
 /* 
  * prototypes 
  */
 
-/* main thread */
 guint64 get_dir_size (const gchar *path);
 guint64 get_size (const gchar *path);
 gchar * ask_for_destination ();
-void show_error (char *fmt, ...);
-void show_verror (char *fmt, va_list ap);
-void thread_show_error (char *fmt, ...);
-
-/* thread copy */
-void thread_copy (ThreadCopyParams *params);
-void perform_copy (FILE *fin, FILE *fout, ProgressDialog *progress);
-gboolean copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ProgressDialog *progress);
-void copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ProgressDialog *progress);
-
-/* thread hash */
-void print_digest (FILE *fp, char *fn_hash, unsigned char *digest);
-void thread_hash ();
 
 
 /*
@@ -66,9 +49,6 @@ void thread_hash ();
  */
 
 gchar *dest = NULL;
-MHASH master_hash;
-workunit *wu;
-GtkWidget *progress_dialog = NULL;
 
 
 /* 
@@ -102,51 +82,6 @@ ask_for_destination ()
   gtk_widget_destroy (filechooser);
 
   return ret;
-}
-
-void 
-show_error (char *fmt, ...)
-{
-  va_list ap;
-  va_start (ap, fmt);
-  show_verror (fmt, ap);
-  va_end (ap);
-}
-
-void 
-show_verror (char *fmt, va_list ap) 
-{
-  gchar *msg;
-
-  msg = g_strdup_vprintf (fmt, ap);
-  if (progress_dialog == NULL) {
-    GtkWidget *dialog;
-
-    dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
-                                     msg);
-    gtk_dialog_run (GTK_DIALOG (dialog));
-    gtk_widget_destroy (dialog);
-  } else {
-    progress_dialog_set_status_with_text (PROGRESS_DIALOG (progress_dialog), PROGRESS_DIALOG_STATUS_FAILED, msg);
-  }
-  g_free (msg);
-}
-
-void 
-thread_show_error (char *fmt, ...)
-{
-  va_list ap;
-
-  wu->quit = TRUE;
-  wu = ring_buffer_put ();
-
-  va_start (ap, fmt);
-  gdk_threads_enter ();
-  show_verror (fmt, ap);
-  gdk_threads_leave ();
-  va_end (ap);
-
-  g_thread_exit(NULL);
 }
 
 guint64 
@@ -201,258 +136,6 @@ get_size (const gchar *path)
 
 
 
-void
-thread_copy (ThreadCopyParams *params)
-{
-  int i;
-
-  gdk_threads_enter ();
-  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_RUNNING, "Copying...");
-  gdk_threads_leave ();
-
-  for (i=1; i<params->argc; i++) {
-    gchar *dir, *base;
-    int last = strlen (params->argv[i]);
-
-    if (params->argv[i][last-1] == G_DIR_SEPARATOR)
-      params->argv[i][last-1] = '\0';
-
-    dir = g_path_get_dirname (params->argv[i]);
-    base = g_path_get_basename (params->argv[i]);
-
-    copy_file (dir, base, FALSE, params->progress);
-
-    g_free (dir);
-    g_free (base);
-  }
-
-  gdk_threads_enter ();
-  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_COMPLETED, "Done!");
-  gdk_threads_leave ();
-  wu->quit = TRUE;
-  wu->n = 0;
-  wu = ring_buffer_put ();
-  g_free (params);
-}
-
-
-void 
-copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ProgressDialog *progress)
-{
-  GDir *dir;
-  GError *error = NULL;
-  gchar *full_path;
-  gchar *out_path;
-  struct stat st;
-
-  //if (fp == NULL)
-  full_path = g_build_filename (basepath, path, NULL);
-  //g_debug ("Opening dir %s/%s => %s", basepath, path, full_path);
-  //g_debug ("Opening dir %s", full_path);
-
-  dir = g_dir_open (full_path, 0, &error);
-  if (dir == NULL) {
-    thread_show_error (error->message);
-    g_error_free (error);
-  }
-
-
-  out_path = g_build_filename (dest, path, NULL);
-  if (stat (out_path, &st) == -1) {
-    g_debug ("Creating %s", out_path);
-    if (g_mkdir (out_path, 0777) == -1)
-      thread_show_error ("Failed to create %s", out_path);
-  } else {
-    g_debug ("%s exists, skipping", out_path);
-  }
-  
-  g_free (out_path);
-
-  const gchar *fn;
-  while ((fn = g_dir_read_name (dir))) {
-    gchar *path_ext = g_build_filename (path, fn, NULL);
-    md5_open = copy_file (basepath, path_ext, md5_open, progress);
-    g_free (path_ext);
-  }
-
-  wu->close = TRUE;
-
-  g_free (full_path);
-  g_dir_close (dir);
-}  
-
-void 
-perform_copy (FILE *fin, FILE *fout, ProgressDialog *progress)
-{
-  workunit *wu_new;
-  size_t n,m;
-
-  wu_new = wu;
-
-  while (1) {
-    wu = wu_new;
-    n = m = 0;
-
-    wu->n = n = fread (wu->buf, 1, BUF_SIZE, fin);
-    if (n == 0) {
-      if (feof (fin))
-        return;
-      if (ferror (fin))
-        thread_show_error ("An error occurred while reading!");
-    }
-
-    //g_debug ("put a buffer");
-    wu_new = ring_buffer_put ();
-    gdk_threads_enter ();
-    progress_dialog_add_size (progress, wu->n);
-    gdk_threads_leave ();
-
-    while (n > 0) {
-      m = fwrite (wu->buf + m, 1, n , fout);
-      if (m == 0) {
-        if (feof (fout))
-          thread_show_error ("EOF occurred while writing");
-        if (ferror (fout))
-          thread_show_error ("An error occurred while writing!");
-      }
-
-      n -= m;
-    }
-
-  }
-}
-
-gboolean
-copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ProgressDialog *progress)
-{
-  struct stat st;
-  gchar *fn_in;
-
-  fn_in = g_build_filename (basepath, path, NULL);
-  gdk_threads_enter ();
-  progress_dialog_set_filename (progress, path);
-  gdk_threads_leave ();
-  //g_debug ("Copying %s/%s => %s", basepath, path, fn_in);
-
-  if (g_stat (fn_in, &st) == 0) {
-    if (S_ISDIR (st.st_mode)) {
-      copy_dir (basepath, path, FALSE, progress);
-    } else {
-      FILE *fin, *fout;
-      gchar *fn_out, *fn_hash;
-
-      fn_out = g_build_filename (dest, path, NULL);
-
-      if (!md5_open) {
-        gchar *md5base, *md5fn, *md5path;
-
-        md5base = g_path_get_dirname (fn_out);
-        md5path = g_path_get_basename (md5base);
-        md5fn = g_strdup_printf ("%s.md5", md5path);
-        g_free (md5path);
-        md5path = g_build_filename (md5base, md5fn, NULL);
-
-        g_free (md5fn);
-        g_free (md5base);
-        wu->fn = md5path;
-        wu->open_md5 = md5_open = TRUE;
-      }
-
-      fin = fopen (fn_in, "r");
-      if (fin == NULL)
-        thread_show_error ("Error opening %s for reading", fn_in);
-      fout = fopen (fn_out, "w");
-      if (fout == NULL)
-        thread_show_error ("Error opening %s for writing", fn_out);
-
-      g_debug ("Copying from \n%s \t to \n%s \t...", fn_in, fn_out);
-
-      perform_copy (fin, fout, progress);
-
-      fn_hash = g_path_get_basename (path);
-      wu->write_hash = TRUE;
-      wu->n = 0;
-      wu->fn = fn_hash;
-      //g_debug ("put a buffer to write hash");
-      wu = ring_buffer_put ();
-
-      fclose (fin);
-      fclose (fout);
-      g_free (fn_out);
-    }
-  } else {
-    thread_show_error ("Could not stat %s!", path);
-  }
-
-  g_free (fn_in);
-
-  return md5_open;
-}
-
-
-
-void
-print_digest (FILE *fp, char *fn_hash, unsigned char *digest)
-{
-  int i;
-
-  //g_debug ("blocksize = %d", mhash_get_block_size (MHASH_MD5));
-  for (i=0; i<mhash_get_block_size (MHASH_MD5); i++) {
-    fprintf (fp, "%.2x", digest[i]);
-  }
-  fprintf (fp, " *%s\n", fn_hash);
-}
-
-void
-thread_hash ()
-{
-  workunit *wu_cur;
-  FILE *fp;
-  MHASH hash;
-  unsigned char digest[16]; // FIXME: 16 is only good for md5
-
-  hash = mhash_cp (master_hash);
-
-  while (1) {
-    //g_debug ("HASH: waiting for buffer");
-    wu_cur = ring_buffer_get ();
-    if (wu_cur == NULL)
-      thread_show_error ("Threads out of sync!");
-    //g_debug ("HASH: got a buffer");
-
-    if (wu_cur->close) {
-      fclose (fp);
-      wu_cur->close = FALSE;
-      //g_debug ("HASH: closing md5 file");
-    }
-
-    if (wu_cur->open_md5) {
-      //g_debug ("md5 file = %s", wu_cur->fn);
-      fp = fopen (wu_cur->fn, "w");
-      if (fp == NULL)
-        thread_show_error ("Error opening %s for writing the hash!", wu_cur->fn);
-      wu_cur->open_md5 = FALSE;
-      g_free (wu_cur->fn);
-    }
-
-    if (wu_cur->n)
-      mhash (hash, wu_cur->buf, wu_cur->n);
-
-    if (wu_cur->write_hash) {
-      //g_debug ("HASH: writing hash for %s", wu_cur->fn);
-      mhash_deinit (hash, digest);
-      print_digest (fp, wu_cur->fn, digest);
-      wu_cur->write_hash = FALSE;
-      g_free (wu_cur->fn);
-      hash = mhash_cp (master_hash);
-    }
-
-    if (wu_cur->quit)
-      break;
-  }
-}
-
-
 
 gboolean show_version = FALSE;
 
@@ -470,6 +153,13 @@ main (int argc, char *argv[])
   GError *error = NULL;
   int i;
   gchar *arg_description = "FILE/DIR {FILE/DIR2 ...}";
+  MHASH master_hash;
+  GtkWidget *progress_dialog = NULL;
+#ifdef STATS
+  gchar *stats;
+#endif
+  int len;
+  gchar *display_dest;
 
 #if DEBUG > 0
   g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
@@ -485,6 +175,7 @@ main (int argc, char *argv[])
   gdk_threads_init ();
   gdk_threads_enter ();
 
+
   if (!gtk_init_with_args (&argc, &argv, arg_description, optionentries, NULL, &error)) {
     if (error != NULL) {
       g_print ("%s: %s\nTry %s --help to see a full list of available command line options.\n", PROG_NAME, error->message, argv[0]);
@@ -493,9 +184,11 @@ main (int argc, char *argv[])
     }
   }
 
+  error_init();
+
   if (show_version) {
     printf ("%s %s\n"
-            "Copyright (C) 2008 David Mohr\n"
+            "Copyright (C) 2008-2009 David Mohr\n"
             "License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>\n"
             "This is free software: you are free to change and redistribute it.\n"
             "There is NO WARRANTY, to the extent permitted by law.\n", PROG_NAME, VERSION);
@@ -510,10 +203,11 @@ main (int argc, char *argv[])
   }
 
 
-  /* get a destination */
-  //dest = "tmp";
+  /* get a destination, if none was specified on the command line */
   if (dest == NULL)
     dest = ask_for_destination();
+  else
+    dest = g_strdup (dest);
   
   /* user aborted */
   if (dest == NULL)
@@ -522,7 +216,27 @@ main (int argc, char *argv[])
   g_debug ("Destination is %s", dest);
 
 
-  /* calculate the size */
+  /* show the progress dialog */
+  progress_dialog = progress_dialog_new ();
+  gtk_widget_show (progress_dialog);
+
+  progress_dialog_set_status (PROGRESS_DIALOG (progress_dialog), PROGRESS_DIALOG_STATUS_CALCULATING_SIZE);
+
+  error_add_dialog (PROGRESS_DIALOG (progress_dialog));
+
+
+  /* add the full destination, or abbreviated, to the window title */
+  if ((len = strlen (dest)) > MAX_FILENAME_LEN)
+    display_dest = g_strdup_printf ("%s to ...%s", PROG_NAME, dest + (len - MAX_FILENAME_LEN));
+  else
+    display_dest = g_strdup_printf ("%s to %s", PROG_NAME, dest);
+    
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), display_dest);
+  g_free (display_dest);
+
+
+  /* Calculate the size of the whole job.
+   * Warning: This might be slow if a lot of files will be copied */
   guint64 total_size = 0;
 
   for (i=1; i<argc; i++) {
@@ -531,6 +245,7 @@ main (int argc, char *argv[])
     total_size += size;
   }
 
+  g_object_set (progress_dialog, "total_size", total_size, NULL);
   g_debug ("Size = %llu\n", total_size);
 
 
@@ -540,52 +255,39 @@ main (int argc, char *argv[])
     show_error ("Could not initialize mhash library!");
 
 
-  /*
-  gchar *md5fn, *md5path;
-  FILE *md5fp;
-
-  md5path = g_path_get_basename (dest);
-  md5fn = g_strdup_printf ("%s.md5", dest);
-  g_free (md5path);
-  md5path = g_build_filename (dest, md5fn, NULL);
-
-  md5fp = fopen (md5path, "w");
-  if (md5fp == NULL)
-    show_error ("Could not create %s", md5path);
-  g_free (md5fn);
-  g_free (md5path);
-  */
-
-
-  /* show the progress dialog */
-  progress_dialog = progress_dialog_new (total_size);
-  gtk_widget_show (progress_dialog);
-
   /* create thread to do the copying */
-  wu = ring_buffer_init ();
+  ring_buffer_init ();
 
   ThreadCopyParams *params;
   params = g_new0 (ThreadCopyParams, 1);
   params->argc = argc;
   params->argv = argv;
+  params->dest = dest;
   params->progress = PROGRESS_DIALOG (progress_dialog);
 
   g_thread_create ((GThreadFunc) thread_copy, params, FALSE, NULL);
 
-  g_thread_create ((GThreadFunc) thread_hash, NULL, FALSE, NULL);
+  g_thread_create ((GThreadFunc) thread_hash, master_hash, FALSE, NULL);
 
   /* transfer over to gtk */
   gtk_main ();
 
   
+  /* finalization */
   gdk_threads_leave ();
 
-  //fclose (md5fp);
+  g_free (dest);
+
   mhash_deinit (master_hash, NULL);
 
 #ifdef STATS
-  g_message ("%d producer waits, \t %d consumer waits", ring_buffer_prod_waits (), ring_buffer_cons_waits ());
+  g_message ("%s", (stats = ring_buffer_get_stats ()));
+  g_free (stats);
 #endif
+
+  ring_buffer_free ();
+
+  g_object_unref (progress_dialog);
     
   return 0;
 }

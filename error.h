@@ -1,6 +1,6 @@
-/* $Id: ring-buffer.h 53 2009-02-16 09:39:17Z squisher $ */
+/* $Id: error.h 50 2009-02-16 07:36:08Z squisher $ */
 /*
- *  Copyright (c) 2008 David Mohr <david@mcbf.net>
+ *  Copyright (c) 2008-2009 David Mohr <david@mcbf.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,24 +17,15 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef __RING_BUFFER_H__
-#define __RING_BUFFER_H__
+#ifndef __ERROR_H__
+#define __ERROR_H__
 
-#include <glib.h>
-#include "global.h"
+#include "progress-dialog.h"
 
-gboolean ring_buffer_init();
+gboolean error_init();
+void error_add_dialog (ProgressDialog *progress);
+void show_error (char *fmt, ...);
+void thread_show_error (char *fmt, ...);
+gboolean error_has_occurred ();
 
-/* producer */
-RING_BUFFER_TYPE * ring_buffer_put();
-RING_BUFFER_TYPE * ring_buffer_get_producer_buffer ();
-/* consumer */
-RING_BUFFER_TYPE * ring_buffer_get();
-
-#ifdef STATS
-gchar *ring_buffer_get_stats ();
-#endif
-
-void ring_buffer_free ();
-
-#endif /* __RING_BUFFER_H__ */
+#endif /*  __ERROR_H__ */

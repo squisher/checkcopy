@@ -1,4 +1,4 @@
-/* $Id: progress-dialog.c 38 2008-07-20 18:37:20Z squisher $ */
+/* $Id: progress-dialog.c 53 2009-02-16 09:39:17Z squisher $ */
 /*
  *  Copyright (c) 2005-2006 Jean-François Wauthy (pollux@xfce.org)
  *
@@ -101,10 +101,10 @@ progress_dialog_status_get_type (void)
 /*                       */
 static GtkDialogClass *parent_class = NULL;
 
-GtkType
+GType
 progress_dialog_get_type ()
 {
-  static GtkType type = 0;
+  static GType type = 0;
 
   if (type == 0) {
     static const GTypeInfo our_info = {
@@ -259,7 +259,7 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
   gchar *temp = NULL;
   gchar *text_time = NULL;
 
-  if (priv->status != PROGRESS_DIALOG_STATUS_RUNNING) {
+  if (priv->status > PROGRESS_DIALOG_STATUS_RUNNING) {
     GTimeVal tv;
     guint64 per_sec;
 
@@ -355,7 +355,10 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
     fraction = 1.0;
     switch (priv->status) {
     case PROGRESS_DIALOG_STATUS_INIT:
-      text = g_strdup (_("Initializing (error?)"));
+      g_error ("Done while initializing");
+      break;
+    case PROGRESS_DIALOG_STATUS_CALCULATING_SIZE:
+      g_error ("Done while calculating size");
       break;
     case PROGRESS_DIALOG_STATUS_RUNNING:
       text = g_strdup ("100%");
@@ -395,9 +398,10 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
 
   priv->status = status;
 
-  if (status == PROGRESS_DIALOG_STATUS_RUNNING)
+  if (status == PROGRESS_DIALOG_STATUS_CALCULATING_SIZE) {
+    set_action_text (dialog, status, "Calculating size....");
     g_get_current_time (&(priv->tv_start));
-  else {
+  } else {
     g_get_current_time (&(priv->tv_end));
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
@@ -438,11 +442,10 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 
 /* constructor */
 GtkWidget *
-progress_dialog_new (guint64 size)
+progress_dialog_new ()
 {
   ProgressDialog *obj;
-  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "modal", TRUE, 
-                                                            "total-size", size, NULL));
+  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "modal", TRUE, NULL));
     
   return GTK_WIDGET (obj);
 }

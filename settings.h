@@ -1,4 +1,4 @@
-/* $Id: settings.h 38 2008-07-20 18:37:20Z squisher $ */
+/* $Id: settings.h 53 2009-02-16 09:39:17Z squisher $ */
 /*
  *  Copyright (c) 2008 David Mohr <david@mcbf.net>
  *
@@ -24,13 +24,12 @@
  * input file in one call to fread */
 #define BUF_SIZE 8192
 
-/* BUF_SLOTS is the number of slots the ring buffer between the copying and
- * the hashing thread has */
+/* BUF_SLOTS is the number of slots the ring buffer uses */
 #define BUF_SLOTS 64
 
 /* CONS_WAIT_TIME sets how long the hashing thread should wait for the copying
  * thread to produce data before timing out, which is non-fatal, see below */
-#define CONS_WAIT_TIME (G_USEC_PER_SEC / 2)
+#define CONS_WAIT_TIME (G_USEC_PER_SEC)
 
 /* MAX_CONSUMER_RETRIES is the number of times that the consumer can time out,
  * before it is considered an error, see above */
@@ -46,8 +45,8 @@
  * updated. This should only matter for very small copying operations */
 #define MIN_BLOCKS_PER_UPDATE 16
 
-/* MAX_FILENAME_LEN specifies the longest as filename can get before it is
- * truncated in the progress dialog */
+/* MAX_FILENAME_LEN specifies the maximum chars of a filename which can get 
+ * displayed in the progress dialog before getting truncated */
 #define MAX_FILENAME_LEN 100
 
 #endif /* __SETINGS_H__ */

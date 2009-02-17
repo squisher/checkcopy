@@ -1,4 +1,4 @@
-/* $Id: progress-dialog.h 37 2008-07-20 17:17:02Z squisher $ */
+/* $Id: progress-dialog.h 53 2009-02-16 09:39:17Z squisher $ */
 /*
  *  Copyright (c) 2005-2006 Jean-François Wauthy (pollux@xfce.org)
  *                2008      David Mohr <david@mcbf.net>
@@ -29,6 +29,7 @@ G_BEGIN_DECLS
 typedef enum
 {
   PROGRESS_DIALOG_STATUS_INIT,
+  PROGRESS_DIALOG_STATUS_CALCULATING_SIZE,
   PROGRESS_DIALOG_STATUS_RUNNING,
   PROGRESS_DIALOG_STATUS_FAILED,
   PROGRESS_DIALOG_STATUS_CANCELLED,
@@ -57,7 +58,7 @@ typedef struct
 } ProgressDialogClass;
 
 
-GtkType progress_dialog_get_type ();
+GType progress_dialog_get_type ();
 
 void progress_dialog_show_buffers (ProgressDialog * dialog, gboolean show);
 void progress_dialog_pulse_progress_bar (ProgressDialog * dialog);
