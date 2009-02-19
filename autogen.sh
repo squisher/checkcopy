@@ -1,2 +1,3 @@
 #!/bin/sh
-autoreconf --install
+#autoreconf --install
+xdt-autogen $@
