@@ -20,7 +20,9 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <string.h>
+#ifdef HAVE_STRING_H
+#  include <string.h>
+#endif
 
 #include "thread-copy.h"
 #include "ring-buffer.h"
