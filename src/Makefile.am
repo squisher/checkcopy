@@ -1,9 +1,9 @@
-INCLUDES=					\
+INCLUDES = 					\
 	-DPACKAGE_LOCALE_DIR=\"$(localedir)\" 	\
 	-I$(top_srcdir)
 
-bin_PROGRAMS=md5copy
-md5copy_headers=				\
+bin_PROGRAMS = md5copy
+md5copy_headers = 				\
 	error.h					\
 	global.h				\
 	progress-dialog.h			\
@@ -12,7 +12,7 @@ md5copy_headers=				\
 	thread-copy.h				\
 	thread-hash.h
 
-md5copy_SOURCES=				\
+md5copy_SOURCES = 				\
 	$(md5copy_headers)			\
 	md5copy.c				\
 	error.c					\
@@ -21,12 +21,12 @@ md5copy_SOURCES=				\
 	thread-copy.c				\
 	thread-hash.c
 
-md5copy_CFLAGS=					\
+md5copy_CFLAGS = 				\
 	$(MD5COPY_CFLAGS)			\
 	$(LIBXFCEGUI4_CFLAGS)			\
 	$(GTHREAD_CFLAGS)
 
-md5copy_LDADD=					\
+md5copy_LDADD = 				\
 	$(MD5COPY_LIBS)				\
 	$(LIBXFCEGUI4_LIBS)			\
 	$(GTHREAD_LIBS)

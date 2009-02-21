@@ -1,4 +1,6 @@
-SUBDIRS=src
+SUBDIRS = 				\
+	po				\
+	src
 
 AUTOMAKE_OPTIONS=			\
 	dist-bzip2

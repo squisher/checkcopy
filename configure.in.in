@@ -3,7 +3,7 @@ AC_COPYRIGHT([Copyright (c) 2008-2009 David Mohr <david@mcbf.net>])
 AC_INIT([md5copy], [0.2], [david@mcbf.net])
 AC_PREREQ([2.61])
 AC_CONFIG_SRCDIR([src/md5copy.c])
-AC_CONFIG_AUX_DIR([build-aux])
+dnl AC_CONFIG_AUX_DIR([build-aux])
 
 dnl Initialize automake
 AM_INIT_AUTOMAKE([AC_PACKAGE_TARNAME()], [AC_PACKAGE_VERSION()])
@@ -15,8 +15,9 @@ AC_PROG_CC()
 AC_PROG_INSTALL()
 AC_PROG_LIBTOOL()
 AC_PROG_INTLTOOL([0.31], [no-xml])
+AM_PROG_CC_C_O()
 
-XDT_I18N(@LINGUAS@)
+XDT_I18N([@LINGUAS@])
 
 XDT_CHECK_PACKAGE([GTHREAD], [gthread-2.0], [2.6.0])
 XDT_CHECK_PACKAGE([GTK], [gtk+-2.0], [2.10.0])

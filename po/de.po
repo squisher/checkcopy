@@ -1,0 +1,87 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-02-21 13:30-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../src/md5copy.c:139 ../src/thread-copy.c:242
+#, c-format
+msgid "Could not stat %s"
+msgstr ""
+
+#. "to" as in "md5copy to /tmp"
+#: ../src/md5copy.c:239 ../src/md5copy.c:241
+msgid "to"
+msgstr ""
+
+#: ../src/md5copy.c:264
+msgid "Could not initialize mhash library"
+msgstr ""
+
+#: ../src/progress-dialog.c:373
+msgid "Failed"
+msgstr ""
+
+#: ../src/progress-dialog.c:376
+msgid "Cancelled"
+msgstr ""
+
+#: ../src/progress-dialog.c:379
+msgid "Completed"
+msgstr ""
+
+#: ../src/thread-copy.c:45
+msgid "Copying..."
+msgstr ""
+
+#: ../src/thread-copy.c:69
+msgid "Done."
+msgstr ""
+
+#: ../src/thread-copy.c:105
+#, c-format
+msgid "Failed to create %s"
+msgstr ""
+
+#: ../src/thread-copy.c:144
+msgid "An error occurred while reading"
+msgstr ""
+
+#: ../src/thread-copy.c:159
+msgid "EOF occurred while writing"
+msgstr ""
+
+#: ../src/thread-copy.c:163
+msgid "An error occurred while writing"
+msgstr ""
+
+#: ../src/thread-copy.c:213
+#, c-format
+msgid "Error opening %s for reading"
+msgstr ""
+
+#: ../src/thread-copy.c:221
+#, c-format
+msgid "Error opening %s for writing"
+msgstr ""
+
+#: ../src/thread-hash.c:62
+msgid "The hasing thread is out of sync!"
+msgstr ""
+
+#: ../src/thread-hash.c:82
+#, c-format
+msgid "Error opening %s for writing the hash"
+msgstr ""
