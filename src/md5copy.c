@@ -39,10 +39,6 @@
 #include "thread-hash.h"
 #include "error.h"
 
-#define PROG_NAME "md5copy"
-#define VERSION "0.2"
-
-
 /* 
  * prototypes 
  */
@@ -175,7 +171,7 @@ main (int argc, char *argv[])
   g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, debug_log_handler, NULL);
 #endif
   
-  g_set_application_name (PROG_NAME);
+  g_set_application_name (PACKAGE_NAME);
 
   if (!g_thread_supported ())
     g_thread_init (NULL);
@@ -186,7 +182,7 @@ main (int argc, char *argv[])
 
   if (!gtk_init_with_args (&argc, &argv, arg_description, optionentries, NULL, &error)) {
     if (error != NULL) {
-      g_print ("%s: %s\nTry %s --help to see a full list of available command line options.\n", PROG_NAME, error->message, argv[0]);
+      g_print ("%s: %s\nTry %s --help to see a full list of available command line options.\n", PACKAGE_NAME, error->message, argv[0]);
       g_error_free (error);
       return 1;
     }
@@ -199,7 +195,7 @@ main (int argc, char *argv[])
             "Copyright (C) 2008-2009 David Mohr\n"
             "License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>\n"
             "This is free software: you are free to change and redistribute it.\n"
-            "There is NO WARRANTY, to the extent permitted by law.\n", PROG_NAME, VERSION);
+            "There is NO WARRANTY, to the extent permitted by law.\n", PACKAGE_NAME, VERSION);
 
     return 0;
   }
@@ -235,9 +231,9 @@ main (int argc, char *argv[])
 
   /* add the full destination, or abbreviated, to the window title */
   if ((len = strlen (dest)) > MAX_FILENAME_LEN)
-    display_dest = g_strdup_printf ("%s %s...%s", PROG_NAME, _("to"), dest + (len - MAX_FILENAME_LEN));
+    display_dest = g_strdup_printf ("%s %s...%s", PACKAGE_NAME, _("to"), dest + (len - MAX_FILENAME_LEN));
   else
-    display_dest = g_strdup_printf ("%s %s %s", PROG_NAME, _("to"), dest);
+    display_dest = g_strdup_printf ("%s %s %s", PACKAGE_NAME, _("to"), dest);
     
   gtk_window_set_title (GTK_WINDOW (progress_dialog), display_dest);
   g_free (display_dest);
