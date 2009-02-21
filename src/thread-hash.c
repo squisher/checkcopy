@@ -18,6 +18,11 @@
  */
 
 #include <mhash.h>
+#include "mhash-fix.h"
+
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #include "global.h"
 #include "thread-hash.h"

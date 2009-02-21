@@ -17,12 +17,18 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <mhash.h>
+#include "mhash-fix.h"
+
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <mhash.h>
 
 #include "progress-dialog.h"
 #include "global.h"

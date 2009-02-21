@@ -17,6 +17,12 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#else
+# error "no config.h"
+#endif
+
 #ifdef HAVE_STRING_H
 #  include <string.h>
 #endif
@@ -26,13 +32,13 @@
 #include <signal.h>
 
 #include <gtk/gtk.h>
+#include <libxfcegui4/libxfcegui4.h>
 
 #include "progress-dialog.h"
 #include "settings.h"
 
 #define BORDER 10
 
-#define _(x) x
 #define PROGRESS_DIALOG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_PROGRESS_DIALOG, ProgressDialogPrivate))
 
 /* struct */

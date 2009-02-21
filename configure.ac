@@ -6,7 +6,7 @@ AC_CONFIG_SRCDIR([src/md5copy.c])
 AC_CONFIG_AUX_DIR([build-aux])
 
 dnl Initialize automake
-AM_INIT_AUTOMAKE([AC_PACKAGE_TARNAME()], [AC_PACKAGE_VERSION()], [-Wall 1.10.1 dist-bzip2])
+AM_INIT_AUTOMAKE([AC_PACKAGE_TARNAME()], [AC_PACKAGE_VERSION()])
 AM_CONFIG_HEADER([config.h])
 AM_MAINTAINER_MODE()
 
@@ -16,13 +16,35 @@ AC_PROG_INSTALL()
 AC_PROG_LIBTOOL()
 AC_PROG_INTLTOOL([0.31], [no-xml])
 
-dnl AM_PROG_CC_C_O
-dnl PKG_CHECK_MODULES(PACKAGE, gtk+-2.0)
-
 XDT_I18N(@LINGUAS@)
 
 XDT_CHECK_PACKAGE([GTHREAD], [gthread-2.0], [2.6.0])
 XDT_CHECK_PACKAGE([GTK], [gtk+-2.0], [2.10.0])
+XDT_CHECK_PACKAGE([XFCE], [gtk+-2.0], [2.10.0])
+XDT_CHECK_PACKAGE([LIBXFCEGUI4], [libxfcegui4-1.0], [4.4.0])
+
+dnl 
+dnl mhash library
+dnl 
+AC_MSG_CHECKING([for the mhash library])
+AC_LANG(C)
+AC_LANG_CONFTEST(
+  [AC_LANG_PROGRAM(
+    [[
+#include <mhash.h>
+]],[[
+  MHASH master_hash;
+  master_hash = mhash_init (MHASH_MD5);
+  mhash_deinit (master_hash, NULL);
+]])])
+if gcc -lmhash -o /dev/null conftest.c >> /dev/null; then 
+  havemhash=yes
+  AC_MSG_RESULT([$havemhash])
+  LDFLAGS="$LDFLAGS -lmhash"
+else 
+  AC_MSG_ERROR([failed to find the mhash library])
+fi
+  
 
 dnl AC_CONFIG_HEADERS([config.h])
 AC_CHECK_HEADERS([string.h])
@@ -31,4 +53,5 @@ AC_CONFIG_FILES([
   po/Makefile.in
   src/Makefile
 ])
+
 AC_OUTPUT

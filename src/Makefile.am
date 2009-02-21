@@ -22,10 +22,12 @@ md5copy_SOURCES=				\
 
 md5copy_CFLAGS=					\
 	$(MD5COPY_CFLAGS)			\
+	$(LIBXFCEGUI4_CFLAGS)			\
 	$(GTHREAD_CFLAGS)
 
 md5copy_LDADD=					\
 	$(MD5COPY_LIBS)				\
+	$(LIBXFCEGUI4_LIBS)			\
 	$(GTHREAD_LIBS)
 
-# vi:set ts=8 sw=8 noet ai nocindent softtabstop=0:
+# vi:set ts=8 sw=8 noet ai nocindent softtabstop=0 list listchars=tab\:>-:
