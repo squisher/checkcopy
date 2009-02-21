@@ -36,4 +36,6 @@ typedef struct {
 
 #define RING_BUFFER_TYPE workunit
 
+#define XFCE_DISABLE_DEPRECATED
+
 #endif /*  __GLOBAL_H__ */

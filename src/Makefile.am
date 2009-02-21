@@ -1,4 +1,5 @@
 INCLUDES=					\
+	-DPACKAGE_LOCALE_DIR=\"$(localedir)\" 	\
 	-I$(top_srcdir)
 
 bin_PROGRAMS=md5copy

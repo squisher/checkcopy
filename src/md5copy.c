@@ -24,14 +24,16 @@
 # include <config.h>
 #endif
 
+#include "global.h"
+
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <libxfcegui4/libxfcegui4.h>
 #include <stdarg.h>
 #include <stdlib.h>
 
 #include "progress-dialog.h"
-#include "global.h"
 #include "ring-buffer.h"
 #include "thread-copy.h"
 #include "thread-hash.h"
@@ -134,7 +136,7 @@ get_size (const gchar *path)
       size = st.st_size;
     }
   } else {
-    show_error ("Could not stat %s!", path);
+    show_error (_("Could not stat %s"), path);
   }
   //g_debug ("%s has size %lu", path, size);
   return size;
@@ -180,7 +182,7 @@ main (int argc, char *argv[])
 
   gdk_threads_init ();
   gdk_threads_enter ();
-
+  xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
 
   if (!gtk_init_with_args (&argc, &argv, arg_description, optionentries, NULL, &error)) {
     if (error != NULL) {
@@ -233,9 +235,9 @@ main (int argc, char *argv[])
 
   /* add the full destination, or abbreviated, to the window title */
   if ((len = strlen (dest)) > MAX_FILENAME_LEN)
-    display_dest = g_strdup_printf ("%s to ...%s", PROG_NAME, dest + (len - MAX_FILENAME_LEN));
+    display_dest = g_strdup_printf ("%s %s...%s", PROG_NAME, _("to"), dest + (len - MAX_FILENAME_LEN));
   else
-    display_dest = g_strdup_printf ("%s to %s", PROG_NAME, dest);
+    display_dest = g_strdup_printf ("%s %s %s", PROG_NAME, _("to"), dest);
     
   gtk_window_set_title (GTK_WINDOW (progress_dialog), display_dest);
   g_free (display_dest);
@@ -258,7 +260,7 @@ main (int argc, char *argv[])
   /* initialize mhash */
   master_hash = mhash_init (MHASH_MD5);
   if (master_hash == MHASH_FAILED)
-    show_error ("Could not initialize mhash library!");
+    show_error (_("Could not initialize mhash library"));
 
 
   /* create thread to do the copying */

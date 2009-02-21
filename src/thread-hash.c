@@ -25,6 +25,9 @@
 #endif
 
 #include "global.h"
+
+#include <libxfcegui4/libxfcegui4.h>
+
 #include "thread-hash.h"
 #include "ring-buffer.h"
 #include "error.h"
@@ -56,7 +59,7 @@ thread_hash (MHASH master_hash)
     wu_cur = ring_buffer_get ();
 
     if (G_UNLIKELY (wu_cur == NULL))
-      thread_show_error ("Threads out of sync!");
+      thread_show_error (_("The hasing thread is out of sync!"));
 
     if (wu_cur->close) {
       g_assert (fp != NULL);
@@ -76,7 +79,7 @@ thread_hash (MHASH master_hash)
 
       fp = fopen (wu_cur->open_md5, "w");
       if (G_UNLIKELY (fp == NULL))
-        thread_show_error ("Error opening %s for writing the hash!", wu_cur->open_md5);
+        thread_show_error (_("Error opening %s for writing the hash"), wu_cur->open_md5);
       g_free (wu_cur->open_md5);
 
       /* reset the wu value */

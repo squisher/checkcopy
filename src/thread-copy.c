@@ -28,6 +28,10 @@
 #  include <string.h>
 #endif
 
+#include "global.h"
+
+#include <libxfcegui4/libxfcegui4.h>
+
 #include "thread-copy.h"
 #include "ring-buffer.h"
 #include "error.h"
@@ -38,7 +42,7 @@ thread_copy (ThreadCopyParams *params)
   int i;
 
   gdk_threads_enter ();
-  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_RUNNING, "Copying...");
+  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_RUNNING, _("Copying..."));
   gdk_threads_leave ();
 
   params->wu = ring_buffer_get_producer_buffer ();
@@ -62,7 +66,7 @@ thread_copy (ThreadCopyParams *params)
   }
 
   gdk_threads_enter ();
-  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_COMPLETED, "Done!");
+  progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_COMPLETED, _("Done."));
   gdk_threads_leave ();
   params->wu->quit = TRUE;
   params->wu->n = 0;
@@ -98,7 +102,7 @@ copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCop
   if (stat (out_path, &st) == -1) {
     g_debug ("Creating %s", out_path);
     if (g_mkdir (out_path, 0777) == -1) {
-      thread_show_error ("Failed to create %s", out_path);
+      thread_show_error (_("Failed to create %s"), out_path);
       g_free (full_path);
       g_free (out_path);
       return;
@@ -137,7 +141,7 @@ perform_copy (FILE *fin, FILE *fout, ThreadCopyParams *params)
       if (feof (fin))
         return;
       if (ferror (fin)) {
-        thread_show_error ("An error occurred while reading!");
+        thread_show_error (_("An error occurred while reading"));
         return;
       }
     }
@@ -152,11 +156,11 @@ perform_copy (FILE *fin, FILE *fout, ThreadCopyParams *params)
       m = fwrite (wu->buf + m, 1, n , fout);
       if (m == 0) {
         if (feof (fout)) {
-          thread_show_error ("EOF occurred while writing");
+          thread_show_error (_("EOF occurred while writing"));
           return ;
         }
         if (ferror (fout)) {
-          thread_show_error ("An error occurred while writing!");
+          thread_show_error (_("An error occurred while writing"));
           return;
         }
       }
@@ -206,7 +210,7 @@ copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCo
 
       fin = fopen (fn_in, "r");
       if (fin == NULL) {
-        thread_show_error ("Error opening %s for reading", fn_in);
+        thread_show_error (_("Error opening %s for reading"), fn_in);
         g_free (fn_in);
         g_free (fn_out);
         return FALSE;
@@ -214,7 +218,7 @@ copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCo
 
       fout = fopen (fn_out, "w");
       if (fout == NULL) {
-        thread_show_error ("Error opening %s for writing", fn_out);
+        thread_show_error (_("Error opening %s for writing"), fn_out);
         g_free (fn_in);
         g_free (fn_out);
         return FALSE;
@@ -235,7 +239,7 @@ copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCo
       g_free (fn_out);
     }
   } else {
-    thread_show_error ("Could not stat %s!", path);
+    thread_show_error (_("Could not stat %s"), path);
     return FALSE;
   }
 
