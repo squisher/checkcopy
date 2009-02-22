@@ -32,6 +32,12 @@
 #include "ring-buffer.h"
 #include "error.h"
 
+/* private variables */
+
+MHASH master_hash;
+
+/* private functions */
+
 void
 print_digest (FILE *fp, char *fn_hash, unsigned char *digest)
 {
@@ -44,8 +50,10 @@ print_digest (FILE *fp, char *fn_hash, unsigned char *digest)
   fprintf (fp, " *%s\n", fn_hash);
 }
 
+/* public functions */
+
 void
-thread_hash (MHASH master_hash)
+thread_hash ()
 {
   workunit *wu_cur;
   FILE *fp = NULL;
@@ -114,3 +122,16 @@ thread_hash (MHASH master_hash)
   mhash_deinit (hash, NULL);
 }
 
+gboolean
+thread_hash_init ()
+{
+  master_hash = mhash_init (MHASH_MD5);
+
+  return (master_hash != MHASH_FAILED);
+}
+
+void
+thread_hash_shutdown ()
+{
+  mhash_deinit (master_hash, NULL);
+}

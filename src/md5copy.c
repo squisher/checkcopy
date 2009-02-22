@@ -17,9 +17,6 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include <mhash.h>
-#include "mhash-fix.h"
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -32,6 +29,7 @@
 #include <libxfcegui4/libxfcegui4.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "progress-dialog.h"
 #include "ring-buffer.h"
@@ -121,7 +119,7 @@ guint64
 get_size (const gchar *path)
 {
   struct stat st;
-  guint64 size;
+  guint64 size = 0;
 
   //g_debug ("Getting size of %s", path);
 
@@ -132,6 +130,7 @@ get_size (const gchar *path)
       size = st.st_size;
     }
   } else {
+    g_message (g_strerror (errno));
     show_error (_("Could not stat %s"), path);
   }
   //g_debug ("%s has size %lu", path, size);
@@ -157,7 +156,6 @@ main (int argc, char *argv[])
   GError *error = NULL;
   int i;
   gchar *arg_description = "FILE/DIR {FILE/DIR2 ...}";
-  MHASH master_hash;
   GtkWidget *progress_dialog = NULL;
 #ifdef STATS
   gchar *stats;
@@ -253,9 +251,8 @@ main (int argc, char *argv[])
   g_debug ("Size = %llu\n", total_size);
 
 
-  /* initialize mhash */
-  master_hash = mhash_init (MHASH_MD5);
-  if (master_hash == MHASH_FAILED)
+  /* initialize the hashing library */
+  if (!thread_hash_init())
     show_error (_("Could not initialize mhash library"));
 
 
@@ -271,7 +268,7 @@ main (int argc, char *argv[])
 
   g_thread_create ((GThreadFunc) thread_copy, params, FALSE, NULL);
 
-  g_thread_create ((GThreadFunc) thread_hash, master_hash, FALSE, NULL);
+  g_thread_create ((GThreadFunc) thread_hash, NULL, FALSE, NULL);
 
   /* transfer over to gtk */
   gtk_main ();
@@ -282,7 +279,7 @@ main (int argc, char *argv[])
 
   g_free (dest);
 
-  mhash_deinit (master_hash, NULL);
+  thread_hash_shutdown ();
 
 #ifdef STATS
   g_message ("%s", (stats = ring_buffer_get_stats ()));

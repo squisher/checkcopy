@@ -23,7 +23,9 @@
 #include <stdio.h>
 
 void print_digest (FILE *fp, char *fn_hash, unsigned char *digest);
+gboolean thread_hash_init ();
 void thread_hash ();
+void thread_hash_shutdown ();
 
 
 #endif /*  __THREAD_HASH_H__ */

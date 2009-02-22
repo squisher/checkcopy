@@ -47,6 +47,6 @@ sed -e "s/@LINGUAS@/${linguas}/g" \
     -e "s/@REVISION@/${revision}/g" \
     < "configure.in.in" > "configure.in"
 
-exec xdt-autogen $@
+exec xdt-autogen --enable-debug=full $@
 
 # vi:set ts=2 sw=2 et ai:
