@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-02-22 16:56-0700\n"
+"POT-Creation-Date: 2009-02-25 23:34-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,28 +16,28 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/md5copy.c:134 ../src/thread-copy.c:242
+#: ../src/md5copy.c:135 ../src/thread-copy.c:244
 #, c-format
 msgid "Could not stat %s"
 msgstr ""
 
-#: ../src/md5copy.c:232 ../src/md5copy.c:234
+#: ../src/md5copy.c:233 ../src/md5copy.c:235
 msgid "to"
 msgstr ""
 
-#: ../src/md5copy.c:256
+#: ../src/md5copy.c:257
 msgid "Could not initialize mhash library"
 msgstr ""
 
-#: ../src/progress-dialog.c:373
+#: ../src/progress-dialog.c:374
 msgid "Failed"
 msgstr ""
 
-#: ../src/progress-dialog.c:376
+#: ../src/progress-dialog.c:377
 msgid "Cancelled"
 msgstr ""
 
-#: ../src/progress-dialog.c:379
+#: ../src/progress-dialog.c:380
 msgid "Completed"
 msgstr ""
 
@@ -45,42 +45,42 @@ msgstr ""
 msgid "Copying..."
 msgstr ""
 
-#: ../src/thread-copy.c:69
+#: ../src/thread-copy.c:76
 msgid "Done."
 msgstr ""
 
-#: ../src/thread-copy.c:105
+#: ../src/thread-copy.c:109
 #, c-format
 msgid "Failed to create %s"
 msgstr ""
 
-#: ../src/thread-copy.c:144
+#: ../src/thread-copy.c:146
 msgid "An error occurred while reading"
 msgstr ""
 
-#: ../src/thread-copy.c:159
+#: ../src/thread-copy.c:161
 msgid "EOF occurred while writing"
 msgstr ""
 
-#: ../src/thread-copy.c:163
+#: ../src/thread-copy.c:165
 msgid "An error occurred while writing"
 msgstr ""
 
-#: ../src/thread-copy.c:213
+#: ../src/thread-copy.c:214
 #, c-format
 msgid "Error opening %s for reading"
 msgstr ""
 
-#: ../src/thread-copy.c:221
+#: ../src/thread-copy.c:222
 #, c-format
 msgid "Error opening %s for writing"
 msgstr ""
 
-#: ../src/thread-hash.c:70
+#: ../src/thread-hash.c:72
 msgid "The hasing thread is out of sync!"
 msgstr ""
 
-#: ../src/thread-hash.c:90
+#: ../src/thread-hash.c:79
 #, c-format
 msgid "Error opening %s for writing the hash"
 msgstr ""

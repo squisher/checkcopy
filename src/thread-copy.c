@@ -47,12 +47,14 @@ thread_copy (ThreadCopyParams *params)
 
   params->wu = ring_buffer_get_producer_buffer ();
 
+  /* FIXME: produce an error here instead */
   g_return_if_fail (params->wu != NULL);
 
   for (i=1; i<params->argc; i++) {
     gchar *dir, *base;
     int last = strlen (params->argv[i]);
 
+    /* strip off trailing slash if there is one */
     if (params->argv[i][last-1] == G_DIR_SEPARATOR)
       params->argv[i][last-1] = '\0';
 
@@ -65,12 +67,14 @@ thread_copy (ThreadCopyParams *params)
     g_free (base);
   }
 
+  // flush the current workunit
+  params->wu->quit = TRUE;
+  //params->wu->n = 0;
+  ring_buffer_put ();
+
   gdk_threads_enter ();
   progress_dialog_set_status_with_text (params->progress, PROGRESS_DIALOG_STATUS_COMPLETED, _("Done."));
   gdk_threads_leave ();
-  params->wu->quit = TRUE;
-  params->wu->n = 0;
-  ring_buffer_put ();
   g_free (params);
 }
 
@@ -100,7 +104,7 @@ copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCop
 
   out_path = g_build_filename (params->dest, path, NULL);
   if (stat (out_path, &st) == -1) {
-    g_debug ("Creating %s", out_path);
+    DBG ("Creating %s", out_path);
     if (g_mkdir (out_path, 0777) == -1) {
       thread_show_error (_("Failed to create %s"), out_path);
       g_free (full_path);
@@ -127,13 +131,11 @@ copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCop
 void 
 perform_copy (FILE *fin, FILE *fout, ThreadCopyParams *params)
 {
-  workunit *wu_new, *wu;
+  workunit *wu;
   size_t n,m;
 
-  wu_new = params->wu;
-
   while (!error_has_occurred ()) {
-    wu = wu_new;
+    wu = params->wu;
     n = m = 0;
 
     wu->n = n = fread (wu->buf, 1, BUF_SIZE, fin);
@@ -147,7 +149,7 @@ perform_copy (FILE *fin, FILE *fout, ThreadCopyParams *params)
     }
 
     //g_debug ("put a buffer");
-    wu_new = ring_buffer_put ();
+    params->wu = ring_buffer_put ();
     gdk_threads_enter ();
     progress_dialog_add_size (params->progress, wu->n);
     gdk_threads_leave ();
@@ -167,7 +169,6 @@ perform_copy (FILE *fin, FILE *fout, ThreadCopyParams *params)
 
       n -= m;
     }
-
   }
 }
 
@@ -205,7 +206,7 @@ copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCo
         g_free (md5base);
         md5_open = TRUE;
         params->wu->open_md5 = md5path;
-        g_debug ("copy->thread open new md5 file at %s", md5path);
+        DBG ("new md5 file at %s", md5path);
       }
 
       fin = fopen (fn_in, "r");
@@ -224,11 +225,12 @@ copy_file (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCo
         return FALSE;
       }
 
-      g_debug ("Copying from \n%s \t to \n%s \t...", fn_in, fn_out);
+      //DBG ("Copying from \n%s \t to \n%s \t...", fn_in, fn_out);
 
       perform_copy (fin, fout, params);
 
       fn_hash = g_path_get_basename (path);
+      DBG ("Done with %s", fn_hash);
       params->wu->write_hash = fn_hash;
       params->wu->n = 0;
       //g_debug ("put a buffer to write hash");

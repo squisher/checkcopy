@@ -21,15 +21,16 @@
 # include <config.h>
 #endif
 
-#include "global.h"
-
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <libxfcegui4/libxfcegui4.h>
+#include <libxfce4util/libxfce4util.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#include "global.h"
 
 #include "progress-dialog.h"
 #include "ring-buffer.h"
@@ -100,7 +101,7 @@ get_dir_size (const gchar *path)
     exit (1);
   }
 
-  g_debug ("Opening dir %s", path);
+  //DBG ("Opening dir %s", path);
 
   const gchar *fn;
   while ((fn = g_dir_read_name (dir))) {
@@ -147,7 +148,7 @@ static GOptionEntry optionentries[] = {
     "Specifies the destination of the copy operation", "SOME_DIR"},
   { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
     "Display program version and exit", NULL },
-  { NULL },
+  { NULL, ' ', 0, 0, NULL, NULL, NULL },
 };
 
 int 
@@ -215,7 +216,7 @@ main (int argc, char *argv[])
   if (dest == NULL)
     exit (0);
 
-  g_debug ("Destination is %s", dest);
+  DBG ("Destination is %s\n", dest);
 
 
   /* show the progress dialog */
@@ -248,7 +249,7 @@ main (int argc, char *argv[])
   }
 
   g_object_set (progress_dialog, "total_size", total_size, NULL);
-  g_debug ("Size = %llu\n", total_size);
+  DBG ("Size = %llu\n", total_size);
 
 
   /* initialize the hashing library */

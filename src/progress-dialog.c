@@ -123,6 +123,7 @@ progress_dialog_get_type ()
       sizeof (ProgressDialog),
       0,
       (GInstanceInitFunc) progress_dialog_init,
+      NULL
     };
 
     type = g_type_register_static (GTK_TYPE_DIALOG, "ProgressDialog", &our_info, 0);

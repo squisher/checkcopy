@@ -44,6 +44,8 @@ print_digest (FILE *fp, char *fn_hash, unsigned char *digest)
   int i;
 
   //g_debug ("blocksize = %d", mhash_get_block_size (MHASH_MD5));
+  DBG ("Writing hash for %s", fn_hash);
+
   for (i=0; i<mhash_get_block_size (MHASH_MD5); i++) {
     fprintf (fp, "%.2x", digest[i]);
   }
@@ -69,25 +71,15 @@ thread_hash ()
     if (G_UNLIKELY (wu_cur == NULL))
       thread_show_error (_("The hasing thread is out of sync!"));
 
-    if (wu_cur->close) {
-      g_assert (fp != NULL);
-
-      fclose (fp);
-
-      /* pop the previous fp off the stack */
-      fp = (FILE *) fp_list->data;
-      fp_list = g_slist_delete_link (fp_list, fp_list);
-
-      /* reset the wu value */
-      wu_cur->close = FALSE;
-    }
-
     if (wu_cur->open_md5) {
       fp_list = g_slist_prepend (fp_list, fp);
 
       fp = fopen (wu_cur->open_md5, "w");
       if (G_UNLIKELY (fp == NULL))
         thread_show_error (_("Error opening %s for writing the hash"), wu_cur->open_md5);
+
+      DBG ("Opened %s", wu_cur->open_md5);
+
       g_free (wu_cur->open_md5);
 
       /* reset the wu value */
@@ -111,6 +103,20 @@ thread_hash ()
       hash = mhash_cp (master_hash);
     }
 
+    if (wu_cur->close) {
+      g_assert (fp != NULL);
+
+      fclose (fp);
+      DBG ("Closing fp");
+
+      /* pop the previous fp off the stack */
+      fp = (FILE *) fp_list->data;
+      fp_list = g_slist_delete_link (fp_list, fp_list);
+
+      /* reset the wu value */
+      wu_cur->close = FALSE;
+    }
+
     if (wu_cur->quit) {
       if (fp_list != NULL)
         g_warning ("Stack of file pointers is not empty!");
@@ -118,7 +124,7 @@ thread_hash ()
     }
   }
 
-  /* deallocate the mhash resources, as we alway have hash as a valid mhash instance */
+  /* deallocate the mhash resources, as mhash is always a valid hash instance */
   mhash_deinit (hash, NULL);
 }
 
