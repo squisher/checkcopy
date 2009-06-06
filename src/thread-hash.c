@@ -71,6 +71,20 @@ thread_hash ()
     if (G_UNLIKELY (wu_cur == NULL))
       thread_show_error (_("The hasing thread is out of sync!"));
 
+    if (wu_cur->close) {
+      g_assert (fp != NULL);
+
+      fclose (fp);
+      DBG ("Closing fp");
+
+      /* pop the previous fp off the stack */
+      fp = (FILE *) fp_list->data;
+      fp_list = g_slist_delete_link (fp_list, fp_list);
+
+      /* reset the wu value */
+      wu_cur->close = FALSE;
+    }
+
     if (wu_cur->open_md5) {
       fp_list = g_slist_prepend (fp_list, fp);
 
@@ -101,20 +115,6 @@ thread_hash ()
 
       /* clone the hash, for then next operation */
       hash = mhash_cp (master_hash);
-    }
-
-    if (wu_cur->close) {
-      g_assert (fp != NULL);
-
-      fclose (fp);
-      DBG ("Closing fp");
-
-      /* pop the previous fp off the stack */
-      fp = (FILE *) fp_list->data;
-      fp_list = g_slist_delete_link (fp_list, fp_list);
-
-      /* reset the wu value */
-      wu_cur->close = FALSE;
     }
 
     if (wu_cur->quit) {
