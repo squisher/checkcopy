@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-02-25 23:34-0700\n"
+"POT-Creation-Date: 2009-10-27 22:08-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,16 +16,16 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/md5copy.c:135 ../src/thread-copy.c:244
+#: ../src/md5copy.c:136 ../src/thread-copy.c:244
 #, c-format
 msgid "Could not stat %s"
 msgstr ""
 
-#: ../src/md5copy.c:233 ../src/md5copy.c:235
+#: ../src/md5copy.c:241 ../src/md5copy.c:243
 msgid "to"
 msgstr ""
 
-#: ../src/md5copy.c:257
+#: ../src/md5copy.c:265
 msgid "Could not initialize mhash library"
 msgstr ""
 
@@ -76,11 +76,7 @@ msgstr ""
 msgid "Error opening %s for writing"
 msgstr ""
 
-#: ../src/thread-hash.c:72
-msgid "The hasing thread is out of sync!"
-msgstr ""
-
-#: ../src/thread-hash.c:79
+#: ../src/thread-hash.c:97
 #, c-format
 msgid "Error opening %s for writing the hash"
 msgstr ""
