@@ -52,6 +52,7 @@ gchar * ask_for_destination ();
  */
 
 gchar *dest = NULL;
+gchar *default_dest = NULL;
 
 
 /* 
@@ -146,6 +147,8 @@ gboolean show_version = FALSE;
 static GOptionEntry optionentries[] = {
   { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest, 
     "Specifies the destination of the copy operation", "SOME_DIR"},
+  { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest, 
+    "Specifies the default destination of the copy operation", "SOME_DIR"},
   { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
     "Display program version and exit", NULL },
   { NULL, ' ', 0, 0, NULL, NULL, NULL },
@@ -165,7 +168,8 @@ main (int argc, char *argv[])
   gchar *display_dest;
 
 #if DEBUG > 0
-  g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
+  DBG ("Not handlingc critical as fatal until gdk bug is resolved");
+  //g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
 #else
   g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, debug_log_handler, NULL);
 #endif
@@ -205,6 +209,10 @@ main (int argc, char *argv[])
     return 1;
   }
 
+  /* check if a default destination was set */
+
+  if (default_dest)
+    g_chdir (default_dest);
 
   /* get a destination, if none was specified on the command line */
   if (dest == NULL)
