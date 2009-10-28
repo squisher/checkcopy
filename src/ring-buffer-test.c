@@ -51,9 +51,18 @@ void thread_consumer ()
   //g_usleep (500000);
 
   while (1) {
+    GError *error = NULL;
+
     //printf ("wait...");
     fflush (stdout);
-    wu = ring_buffer_get ();
+    wu = ring_buffer_get (&error);
+
+    if (wu == NULL) {
+      g_critical (error->message);
+      g_error_free (error);
+      return;
+    }
+
     //printf ("done...");
     if (wu->buf[0] < '0' || wu->buf[1] > '9')
       g_error ("unexpected value");

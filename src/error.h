@@ -22,10 +22,18 @@
 
 #include "progress-dialog.h"
 
+#define MD5COPY_ERROR md5copy_error_quark ()
+
+enum {
+  MD5COPY_ERROR_GENERIC,
+  MD5COPY_ERROR_CONSUMER_TIMEOUT,
+};
+
 gboolean error_init();
 void error_add_dialog (ProgressDialog *progress);
 void show_error (char *fmt, ...);
 void thread_show_error (char *fmt, ...);
 gboolean error_has_occurred ();
+GQuark md5copy_error_quark ();
 
 #endif /*  __ERROR_H__ */

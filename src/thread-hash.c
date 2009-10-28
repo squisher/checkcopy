@@ -66,10 +66,14 @@ thread_hash ()
   hash = mhash_cp (master_hash);
 
   while (!error_has_occurred ()) {
-    wu_cur = ring_buffer_get ();
+    GError *error = NULL;
 
-    if (G_UNLIKELY (wu_cur == NULL))
-      thread_show_error (_("The hasing thread is out of sync!"));
+    wu_cur = ring_buffer_get (&error);
+
+    if (G_UNLIKELY (wu_cur == NULL)) {
+      thread_show_error (error->message);
+      g_error_free (error);
+    }
 
     if (wu_cur->close) {
       g_assert (fp != NULL);

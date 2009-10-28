@@ -125,7 +125,7 @@ ring_buffer_put ()
 
 
 RING_BUFFER_TYPE *
-ring_buffer_get ()
+ring_buffer_get (GError **error)
 {
   int t,i;
   gboolean got_signal = TRUE;
@@ -163,12 +163,15 @@ ring_buffer_get ()
 #ifdef DEBUG_RING_BUFFER
       g_debug ("Consumer had to wait");
 #endif
-      if (error_has_occurred ())
+      if (error_has_occurred ()) {
+        g_set_error (error, MD5COPY_ERROR, MD5COPY_ERROR_GENERIC, "Some error occurred while the consumer was waiting for a buffer");
         return NULL;
+      }
     }
   }
   if (!got_signal) {
-    g_warning("Consumer could not find any work even after %d retries!", MAX_CONSUMER_RETRIES);
+    g_set_error (error, MD5COPY_ERROR, MD5COPY_ERROR_CONSUMER_TIMEOUT,
+                 "Consumer could not find any work even after %d retries!", MAX_CONSUMER_RETRIES);
     g_mutex_unlock (mutex);
     return NULL;
   }

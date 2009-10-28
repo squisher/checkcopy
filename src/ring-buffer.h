@@ -29,7 +29,7 @@ gboolean ring_buffer_init();
 RING_BUFFER_TYPE * ring_buffer_put();
 RING_BUFFER_TYPE * ring_buffer_get_producer_buffer ();
 /* consumer */
-RING_BUFFER_TYPE * ring_buffer_get();
+RING_BUFFER_TYPE * ring_buffer_get(GError **error);
 
 #ifdef STATS
 gchar *ring_buffer_get_stats ();

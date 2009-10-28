@@ -99,6 +99,11 @@ error_has_occurred ()
   return ret;
 }
 
+GQuark
+md5copy_error_quark () {
+  return g_quark_from_static_string ("md5copy-error-quark");
+}
+
 
 /* private functions */
 
@@ -128,4 +133,3 @@ show_verror (char *fmt, va_list ap)
   }
   g_free (msg);
 }
-
