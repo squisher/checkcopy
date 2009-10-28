@@ -48,7 +48,7 @@ int prod_waits, cons_waits, cons_retries;
 
 
 gboolean
-ring_buffer_init ()
+ring_buffer_init (void)
 {
   int i;
   int pointer_size = (sizeof (RING_BUFFER_TYPE *) * BUF_SLOTS);
@@ -79,7 +79,7 @@ ring_buffer_init ()
  * returned by ring_buffer_put ()
  */
 RING_BUFFER_TYPE *
-ring_buffer_get_producer_buffer ()
+ring_buffer_get_producer_buffer (void)
 {
   static gboolean producer_active = FALSE;
 
@@ -95,7 +95,7 @@ ring_buffer_get_producer_buffer ()
 
 
 RING_BUFFER_TYPE *
-ring_buffer_put ()
+ring_buffer_put (void)
 {
   int t;
 
@@ -129,7 +129,7 @@ ring_buffer_get (GError **error)
 {
   int t,i;
   gboolean got_signal = TRUE;
-  GTimeVal time;
+  GTimeVal tm;
 
   g_mutex_lock (mutex);
   t = (cons + 1) % BUF_SLOTS;
@@ -144,13 +144,13 @@ ring_buffer_get (GError **error)
 # endif
 #endif
 
-      g_get_current_time (&time);
-      g_time_val_add (&time, CONS_WAIT_TIME);
+      g_get_current_time (&tm);
+      g_time_val_add (&tm, CONS_WAIT_TIME);
 
 #ifdef DEBUG_RING_BUFFER
       g_debug ("Consumer starts to sleep to wait for a signal");
 #endif
-      got_signal = g_cond_timed_wait (cond_prod, mutex, &time);
+      got_signal = g_cond_timed_wait (cond_prod, mutex, &tm);
       if (got_signal && t != prod) {
 #ifdef DEBUG_RING_BUFFER
         g_debug ("Consumer got signal & has work");
@@ -186,14 +186,14 @@ ring_buffer_get (GError **error)
 
 #ifdef STATS
 gchar *
-ring_buffer_get_stats ()
+ring_buffer_get_stats (void)
 {
   return g_strdup_printf ("%d producer waits, \t %d consumer waits, \t %d consumer retries",  prod_waits, cons_waits, cons_retries);
 }
 #endif
 
 void
-ring_buffer_free ()
+ring_buffer_free (void)
 {
   g_free (buffers);
 

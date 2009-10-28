@@ -45,6 +45,7 @@
 guint64 get_dir_size (const gchar *path);
 guint64 get_size (const gchar *path);
 gchar * ask_for_destination ();
+void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *msg, gpointer data);
 
 
 /*
@@ -66,7 +67,7 @@ void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *
 
 /* returns a string that must be freed */
 gchar *
-ask_for_destination ()
+ask_for_destination (void)
 {
   GtkWidget *filechooser;
   gint res;
@@ -94,6 +95,7 @@ get_dir_size (const gchar *path)
   GDir *dir;
   GError *error = NULL;
   guint64 size = 0;
+  const gchar *fn;
 
   dir = g_dir_open (path, 0, &error);
   if (dir == NULL) {
@@ -104,7 +106,6 @@ get_dir_size (const gchar *path)
 
   //DBG ("Opening dir %s", path);
 
-  const gchar *fn;
   while ((fn = g_dir_read_name (dir))) {
     gchar *full_fn = g_build_filename (path, fn, NULL);
     size += get_size (full_fn);
@@ -132,7 +133,7 @@ get_size (const gchar *path)
       size = st.st_size;
     }
   } else {
-    g_message (g_strerror (errno));
+    g_message ("%s", g_strerror (errno));
     show_error (_("Could not stat %s"), path);
   }
   //g_debug ("%s has size %lu", path, size);
@@ -166,6 +167,8 @@ main (int argc, char *argv[])
 #endif
   int len;
   gchar *display_dest;
+  guint64 total_size = 0;
+  ThreadCopyParams *params;
 
 #if DEBUG > 0
   DBG ("Not handlingc critical as fatal until gdk bug is resolved");
@@ -248,7 +251,6 @@ main (int argc, char *argv[])
 
   /* Calculate the size of the whole job.
    * Warning: This might be slow if a lot of files will be copied */
-  guint64 total_size = 0;
 
   for (i=1; i<argc; i++) {
     guint64 size = 0;
@@ -268,7 +270,6 @@ main (int argc, char *argv[])
   /* create thread to do the copying */
   ring_buffer_init ();
 
-  ThreadCopyParams *params;
   params = g_new0 (ThreadCopyParams, 1);
   params->argc = argc;
   params->argv = argv;

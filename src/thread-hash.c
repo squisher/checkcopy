@@ -55,7 +55,7 @@ print_digest (FILE *fp, char *fn_hash, unsigned char *digest)
 /* public functions */
 
 void
-thread_hash ()
+thread_hash (void)
 {
   workunit *wu_cur;
   FILE *fp = NULL;
@@ -133,7 +133,7 @@ thread_hash ()
 }
 
 gboolean
-thread_hash_init ()
+thread_hash_init (void)
 {
   master_hash = mhash_init (MHASH_MD5);
 
@@ -141,7 +141,7 @@ thread_hash_init ()
 }
 
 void
-thread_hash_shutdown ()
+thread_hash_shutdown (void)
 {
   mhash_deinit (master_hash, NULL);
 }

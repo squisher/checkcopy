@@ -108,7 +108,7 @@ progress_dialog_status_get_type (void)
 static GtkDialogClass *parent_class = NULL;
 
 GType
-progress_dialog_get_type ()
+progress_dialog_get_type (void)
 {
   static GType type = 0;
 
@@ -449,7 +449,7 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 
 /* constructor */
 GtkWidget *
-progress_dialog_new ()
+progress_dialog_new (void)
 {
   ProgressDialog *obj;
   obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "modal", TRUE, NULL));

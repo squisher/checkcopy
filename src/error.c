@@ -42,7 +42,7 @@ void show_verror (char *fmt, va_list ap);
 /* public functions */
 
 gboolean
-error_init ()
+error_init (void)
 {
   error_occurred = FALSE;
 
@@ -89,7 +89,7 @@ thread_show_error (char *fmt, ...)
 
 
 gboolean
-error_has_occurred ()
+error_has_occurred (void)
 {
   gboolean ret;
 //  g_mutex_lock (mutex);
@@ -100,7 +100,8 @@ error_has_occurred ()
 }
 
 GQuark
-md5copy_error_quark () {
+md5copy_error_quark (void)
+{
   return g_quark_from_static_string ("md5copy-error-quark");
 }
 
@@ -119,13 +120,13 @@ show_verror (char *fmt, va_list ap)
 
   msg = g_strdup_vprintf (fmt, ap);
 
-  g_warning (msg);
+  g_warning ("%s", msg);
 
   if (progress == NULL) {
     GtkWidget *dialog;
 
     dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
-                                     msg);
+                                     "%s", msg);
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
   } else {

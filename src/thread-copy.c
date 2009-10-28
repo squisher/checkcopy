@@ -87,6 +87,7 @@ copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCop
   gchar *full_path;
   gchar *out_path;
   struct stat st;
+  const gchar *fn;
 
   //if (fp == NULL)
   full_path = g_build_filename (basepath, path, NULL);
@@ -115,7 +116,6 @@ copy_dir (const gchar *basepath, const gchar *path, gboolean md5_open, ThreadCop
   
   g_free (out_path);
 
-  const gchar *fn;
   while ((fn = g_dir_read_name (dir)) && !error_has_occurred ()) {
     gchar *path_ext = g_build_filename (path, fn, NULL);
     md5_open = copy_file (basepath, path_ext, md5_open, params);
