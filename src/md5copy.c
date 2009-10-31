@@ -32,6 +32,7 @@
 
 #include "global.h"
 
+#include "checkcopy-cancel.h"
 #include "checkcopy-traversal.h"
 
 #include "progress-dialog.h"
@@ -196,7 +197,8 @@ main (int argc, char *argv[])
     }
   }
 
-  error_init();
+  error_init ();
+  checkcopy_cancel_init ();
 
   if (show_version) {
     printf ("%s %s\n"
