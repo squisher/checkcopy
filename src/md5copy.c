@@ -32,6 +32,8 @@
 
 #include "global.h"
 
+#include "checkcopy-traversal.h"
+
 #include "progress-dialog.h"
 #include "ring-buffer.h"
 #include "thread-copy.h"
@@ -168,7 +170,7 @@ main (int argc, char *argv[])
   int len;
   gchar *display_dest;
   guint64 total_size = 0;
-  ThreadCopyParams *params;
+  //GCancellable cancel;
 
 #if DEBUG > 0
   DBG ("Not handlingc critical as fatal until gdk bug is resolved");
@@ -229,6 +231,9 @@ main (int argc, char *argv[])
 
   DBG ("Destination is %s\n", dest);
 
+  checkcopy_traverse (argv+1, argc-1);
+
+  return 1;
 
   /* show the progress dialog */
   progress_dialog = progress_dialog_new ();
@@ -261,24 +266,8 @@ main (int argc, char *argv[])
   g_object_set (progress_dialog, "total_size", total_size, NULL);
   DBG ("Size = %llu\n", total_size);
 
-
-  /* initialize the hashing library */
-  if (!thread_hash_init())
-    show_error (_("Could not initialize mhash library"));
-
-
-  /* create thread to do the copying */
-  ring_buffer_init ();
-
-  params = g_new0 (ThreadCopyParams, 1);
-  params->argc = argc;
-  params->argv = argv;
-  params->dest = dest;
-  params->progress = PROGRESS_DIALOG (progress_dialog);
-
-  g_thread_create ((GThreadFunc) thread_copy, params, FALSE, NULL);
-
-  g_thread_create ((GThreadFunc) thread_hash, NULL, FALSE, NULL);
+  
+  //cancel = g_cancellable_new ();
 
   /* transfer over to gtk */
   gtk_main ();

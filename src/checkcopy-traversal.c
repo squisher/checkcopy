@@ -20,13 +20,13 @@
 
 /* internals */
 
-gboolean checkcopy_traverse_file (GFile *file, GError **error);
+gboolean checkcopy_traverse_file (GFile *root, GFile *file, GError **error);
 
 
 /* implementation */
 
 gboolean
-checkcopy_traverse_file (GFile *file, GError **error)
+checkcopy_traverse_file (GFile *root, GFile *file, GError **error)
 {
   GFileInfo *fileinfo;
   const gchar *name;
@@ -41,9 +41,39 @@ checkcopy_traverse_file (GFile *file, GError **error)
   name = g_file_info_get_display_name (fileinfo);
 
   if (g_file_info_get_file_type (fileinfo) == G_FILE_TYPE_DIRECTORY) {
-    g_message ("%s is a directory\n", name);
+    GFileEnumerator *iter;
+    GFileInfo *child_info;
+
+    g_message ("%s is a directory", name);
+
+    iter = g_file_enumerate_children (file,
+                                      G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_NAME,
+                                      G_FILE_QUERY_INFO_NONE, NULL, error);
+
+    if (iter == NULL)
+      return FALSE;
+
+    while ((child_info = g_file_enumerator_next_file (iter, NULL, error)) != NULL) {
+      GFile *child;
+      gboolean ret;
+      const gchar *child_name;
+
+      child_name = g_file_info_get_name (child_info);
+
+      child = g_file_resolve_relative_path (file, child_name);
+
+      if (child == NULL)
+        return FALSE;
+
+      ret = checkcopy_traverse_file (root, child, error);
+      if (!ret) {
+        g_warning ("Error while traversing: %s", (*error)->message);
+        g_error_free (*error);
+      }
+    }
+
   } else {
-    g_message ("%s is a file\n", name);
+    g_message ("file %s", g_file_get_relative_path (root, file));
   }
 
   return TRUE;
@@ -58,6 +88,6 @@ checkcopy_traverse (gchar **files, const gint count)
   for (i=0; i<count; i++) {
     GFile *file = g_file_new_for_commandline_arg (files[i]);
 
-    checkcopy_traverse_file (file, &error);
+    checkcopy_traverse_file (file, file, &error);
   }
 }
