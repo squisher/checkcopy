@@ -10,7 +10,8 @@ md5copy_headers = 				\
 	ring-buffer.h				\
 	settings.h				\
 	thread-copy.h				\
-	thread-hash.h
+	thread-hash.h				\
+	checkcopy-traversal.h
 
 md5copy_SOURCES = 				\
 	$(md5copy_headers)			\
@@ -19,7 +20,8 @@ md5copy_SOURCES = 				\
 	progress-dialog.c			\
 	ring-buffer.c				\
 	thread-copy.c				\
-	thread-hash.c
+	thread-hash.c				\
+	checkcopy-traversal.c
 
 md5copy_CFLAGS = 				\
 	$(MD5COPY_CFLAGS)			\
