@@ -17,6 +17,7 @@
  */
 
 #include "checkcopy-traversal.h"
+#include "checkcopy-cancel.h"
 
 /* internals */
 
@@ -30,10 +31,13 @@ checkcopy_traverse_file (GFile *root, GFile *file, GError **error)
 {
   GFileInfo *fileinfo;
   const gchar *name;
+  GCancellable *cancel;
+
+  cancel = checkcopy_get_cancellable();
 
   fileinfo = g_file_query_info (file, 
                                 G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                                G_FILE_QUERY_INFO_NONE, NULL, error);
+                                G_FILE_QUERY_INFO_NONE, cancel, error);
   
   if (fileinfo == NULL)
     return FALSE;
@@ -53,7 +57,7 @@ checkcopy_traverse_file (GFile *root, GFile *file, GError **error)
     if (iter == NULL)
       return FALSE;
 
-    while ((child_info = g_file_enumerator_next_file (iter, NULL, error)) != NULL) {
+    while ((child_info = g_file_enumerator_next_file (iter, cancel, error)) != NULL) {
       GFile *child;
       gboolean ret;
       const gchar *child_name;
