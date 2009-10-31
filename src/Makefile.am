@@ -11,6 +11,8 @@ md5copy_headers = 				\
 	settings.h				\
 	thread-copy.h				\
 	thread-hash.h				\
+	checkcopy-cancel.h			\
+	checkcopy-file-handler.h		\
 	checkcopy-traversal.h
 
 md5copy_SOURCES = 				\
@@ -21,6 +23,8 @@ md5copy_SOURCES = 				\
 	ring-buffer.c				\
 	thread-copy.c				\
 	thread-hash.c				\
+	checkcopy-cancel.c			\
+	checkcopy-file-handler.c		\
 	checkcopy-traversal.c
 
 md5copy_CFLAGS = 				\
