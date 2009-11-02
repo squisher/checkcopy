@@ -16,75 +16,93 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <libxfce4util/libxfce4util.h>
+
 #include "checkcopy-traversal.h"
 #include "checkcopy-cancel.h"
 
+
 /* internals */
 
-gboolean checkcopy_traverse_file (GFile *root, GFile *file, GError **error);
+gboolean checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error);
 
 
 /* implementation */
 
 gboolean
-checkcopy_traverse_file (GFile *root, GFile *file, GError **error)
+checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error)
 {
   GFileInfo *fileinfo;
   const gchar *name;
   GCancellable *cancel;
+  gchar *attribs;
+  gboolean aborted = FALSE;
+
+  attribs = g_strconcat (G_FILE_ATTRIBUTE_STANDARD_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ",", 
+                         checkcopy_file_handler_get_attribute_list (fhandler), NULL);
+
+  DBG ("Checking for '%s' attributes", attribs);
 
   cancel = checkcopy_get_cancellable();
 
   fileinfo = g_file_query_info (file, 
-                                G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                                attribs,
                                 G_FILE_QUERY_INFO_NONE, cancel, error);
   
-  if (fileinfo == NULL)
-    return FALSE;
+  if (fileinfo != NULL) {
 
-  name = g_file_info_get_display_name (fileinfo);
+    name = g_file_info_get_display_name (fileinfo);
 
-  if (g_file_info_get_file_type (fileinfo) == G_FILE_TYPE_DIRECTORY) {
-    GFileEnumerator *iter;
-    GFileInfo *child_info;
+    if (g_file_info_get_file_type (fileinfo) == G_FILE_TYPE_DIRECTORY) {
+      GFileEnumerator *iter;
+      GFileInfo *child_info;
 
-    g_message ("%s is a directory", name);
+      DBG ("%s is a directory", name);
 
-    iter = g_file_enumerate_children (file,
-                                      G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_NAME,
-                                      G_FILE_QUERY_INFO_NONE, NULL, error);
+      iter = g_file_enumerate_children (file,
+                                        attribs,
+                                        G_FILE_QUERY_INFO_NONE, NULL, error);
 
-    if (iter == NULL)
-      return FALSE;
+      if (iter != NULL) {
+        while ((child_info = g_file_enumerator_next_file (iter, cancel, error)) != NULL) {
+          GFile *child;
+          gboolean ret;
+          const gchar *child_name;
 
-    while ((child_info = g_file_enumerator_next_file (iter, cancel, error)) != NULL) {
-      GFile *child;
-      gboolean ret;
-      const gchar *child_name;
+          child_name = g_file_info_get_name (child_info);
 
-      child_name = g_file_info_get_name (child_info);
+          child = g_file_resolve_relative_path (file, child_name);
 
-      child = g_file_resolve_relative_path (file, child_name);
+          if (child != NULL) {
+            ret = checkcopy_traverse_file (fhandler, root, child, error);
+            if (!ret) {
+              g_warning ("Error while traversing: %s", (*error)->message);
+              g_error_free (*error);
+            }
+          }
+        } /* while */
+      } /* if iter */
 
-      if (child == NULL)
-        return FALSE;
-
-      ret = checkcopy_traverse_file (root, child, error);
-      if (!ret) {
-        g_warning ("Error while traversing: %s", (*error)->message);
-        g_error_free (*error);
-      }
+    } else {
+      DBG ("file %s", g_file_get_relative_path (root, file));
     }
 
-  } else {
-    g_message ("file %s", g_file_get_relative_path (root, file));
+    checkcopy_file_handler_process (fhandler, root, file, fileinfo);
+
+    aborted = TRUE;
   }
 
-  return TRUE;
+  g_free (attribs);
+
+  return aborted;
 }
 
 void 
-checkcopy_traverse (gchar **files, const gint count)
+checkcopy_traverse (gchar **files, const gint count, CheckcopyFileHandler *fhandler)
 {
   int i;
   GError *error = NULL;
@@ -92,6 +110,6 @@ checkcopy_traverse (gchar **files, const gint count)
   for (i=0; i<count; i++) {
     GFile *file = g_file_new_for_commandline_arg (files[i]);
 
-    checkcopy_traverse_file (file, file, &error);
+    checkcopy_traverse_file (fhandler, file, file, &error);
   }
 }

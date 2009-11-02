@@ -42,13 +42,13 @@ typedef struct {
   GTypeInterface parent;
 
   void (*process) (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info);
-  gchar * (*get_attribute_list) (CheckcopyFileHandler *fhandler);
+  const gchar * (*get_attribute_list) (CheckcopyFileHandler *fhandler);
 } CheckcopyFileHandlerInterface;
 
 GType checkcopy_file_handler_get_type (void);
 
 void checkcopy_file_handler_process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info);
-gchar * checkcopy_file_handler_get_attribute_list (CheckcopyFileHandler *fhandler);
+const gchar * checkcopy_file_handler_get_attribute_list (CheckcopyFileHandler *fhandler);
 
 
 G_END_DECLS

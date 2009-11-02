@@ -33,7 +33,9 @@
 #include "global.h"
 
 #include "checkcopy-cancel.h"
+//#include "checkcopy-file-handler.h"
 #include "checkcopy-traversal.h"
+#include "checkcopy-planner.h"
 
 #include "progress-dialog.h"
 #include "ring-buffer.h"
@@ -171,7 +173,7 @@ main (int argc, char *argv[])
   int len;
   gchar *display_dest;
   guint64 total_size = 0;
-  //GCancellable cancel;
+  CheckcopyPlanner *planner;
 
 #if DEBUG > 0
   DBG ("Not handlingc critical as fatal until gdk bug is resolved");
@@ -233,7 +235,9 @@ main (int argc, char *argv[])
 
   DBG ("Destination is %s\n", dest);
 
-  checkcopy_traverse (argv+1, argc-1);
+  planner = checkcopy_planner_new ();
+
+  checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (planner));
 
   return 1;
 

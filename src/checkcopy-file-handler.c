@@ -17,7 +17,12 @@
  *  
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include "checkcopy-file-handler.h"
+
 
 /*- private prototypes -*/
 
@@ -76,10 +81,14 @@ checkcopy_file_handler_process (CheckcopyFileHandler *fhandler, GFile *root, GFi
 {
   CheckcopyFileHandlerInterface *iface = CHECKCOPY_FILE_HANDLER_GET_INTERFACE (fhandler);
 
+  g_assert (root != NULL);
+  g_assert (file != NULL);
+  g_assert (info != NULL);
+
   iface->process (fhandler, root, file, info);
 }
 
-gchar *
+const gchar *
 checkcopy_file_handler_get_attribute_list (CheckcopyFileHandler *fhandler)
 {
   CheckcopyFileHandlerInterface *iface = CHECKCOPY_FILE_HANDLER_GET_INTERFACE (fhandler);

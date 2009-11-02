@@ -20,9 +20,11 @@
 
 #include <gio/gio.h>
 
+#include "checkcopy-file-handler.h"
+
 G_BEGIN_DECLS
 
-void checkcopy_traverse (gchar **files, const gint count);
+void checkcopy_traverse (gchar **files, const gint count, CheckcopyFileHandler *fhandler);
 
 G_END_DECLS
 
