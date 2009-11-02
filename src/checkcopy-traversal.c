@@ -77,6 +77,8 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
           child = g_file_resolve_relative_path (file, child_name);
 
+          g_free (child_name);
+
           if (child != NULL) {
             ret = checkcopy_traverse_file (fhandler, root, child, error);
             if (!ret) {
@@ -84,12 +86,24 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
               g_error_free (*error);
             }
           }
+
+          g_object_unref (child);
         } /* while */
       } /* if iter */
 
     } else {
-      DBG ("file %s", g_file_get_relative_path (root, file));
+#ifdef DEBUG
+      gchar *relname;
+
+      relname = g_file_get_relative_path (root, file);
+
+      DBG ("file %s", relname);
+
+      g_free (relname);
+#endif
     }
+
+    g_free (name);
 
     checkcopy_file_handler_process (fhandler, root, file, fileinfo);
 
@@ -108,8 +122,12 @@ checkcopy_traverse (gchar **files, const gint count, CheckcopyFileHandler *fhand
   GError *error = NULL;
 
   for (i=0; i<count; i++) {
-    GFile *file = g_file_new_for_commandline_arg (files[i]);
+    GFile *file;
+   
+    file = g_file_new_for_commandline_arg (files[i]);
 
     checkcopy_traverse_file (fhandler, file, file, &error);
+
+    g_object_unref (file);
   }
 }
