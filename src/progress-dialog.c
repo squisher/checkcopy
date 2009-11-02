@@ -35,9 +35,12 @@
 #include <libxfcegui4/libxfcegui4.h>
 
 #include "progress-dialog.h"
-#include "settings.h"
 
 #define BORDER 10
+#define BUF_SIZE 8192
+#define PROGRESS_UPDATE_NUM 5
+#define MIN_BLOCKS_PER_UPDATE 4
+#define MAX_FILENAME_LEN 80
 
 #define PROGRESS_DIALOG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_PROGRESS_DIALOG, ProgressDialogPrivate))
 

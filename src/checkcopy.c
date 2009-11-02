@@ -30,16 +30,11 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "global.h"
-
 #include "checkcopy-cancel.h"
 #include "checkcopy-traversal.h"
 #include "checkcopy-planner.h"
 
 #include "progress-dialog.h"
-#include "ring-buffer.h"
-#include "thread-copy.h"
-#include "thread-hash.h"
 #include "error.h"
 
 /* 
@@ -213,6 +208,7 @@ main (int argc, char *argv[])
   error_add_dialog (PROGRESS_DIALOG (progress_dialog));
 
 
+#define MAX_FILENAME_LEN 80
   /* add the full destination, or abbreviated, to the window title */
   if ((len = strlen (dest)) > MAX_FILENAME_LEN)
     display_dest = g_strdup_printf ("%s %s...%s", PACKAGE_NAME, _("to"), dest + (len - MAX_FILENAME_LEN));
@@ -235,14 +231,10 @@ main (int argc, char *argv[])
 
   g_free (dest);
 
-  thread_hash_shutdown ();
-
 #ifdef STATS
   g_message ("%s", (stats = ring_buffer_get_stats ()));
   g_free (stats);
 #endif
-
-  ring_buffer_free ();
 
   g_object_unref (progress_dialog);
     

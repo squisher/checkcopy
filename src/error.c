@@ -24,7 +24,6 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 
-#include "global.h"
 #include "progress-dialog.h"
 #include "error.h"
 
