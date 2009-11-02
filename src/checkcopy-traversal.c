@@ -63,6 +63,8 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
       DBG ("%s is a directory", name);
 
+      checkcopy_file_handler_process (fhandler, root, file, fileinfo);
+
       iter = g_file_enumerate_children (file,
                                         attribs,
                                         G_FILE_QUERY_INFO_NONE, NULL, error);
@@ -99,9 +101,9 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
       g_free (relname);
 #endif
-    }
 
-    checkcopy_file_handler_process (fhandler, root, file, fileinfo);
+      checkcopy_file_handler_process (fhandler, root, file, fileinfo);
+    }
 
     aborted = TRUE;
   }
@@ -119,11 +121,14 @@ checkcopy_traverse (gchar **files, const gint count, CheckcopyFileHandler *fhand
 
   for (i=0; i<count; i++) {
     GFile *file;
+    GFile *root;
    
     file = g_file_new_for_commandline_arg (files[i]);
+    root = g_file_get_parent (file);
 
-    checkcopy_traverse_file (fhandler, file, file, &error);
+    checkcopy_traverse_file (fhandler, root, file, &error);
 
     g_object_unref (file);
+    g_object_unref (root);
   }
 }

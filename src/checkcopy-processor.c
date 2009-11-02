@@ -17,6 +17,10 @@
  *  
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <libxfce4util/libxfce4util.h>
 
 #include "checkcopy-processor.h"
@@ -126,13 +130,30 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   GFile *dst;
 
   relname = g_file_get_relative_path (root, file);
-  DBG ("Copying %s", relname);
+  /* 
+  if (relname == NULL)
+    relname = g_file_get_basename (file);
+  */
+
   dst = g_file_resolve_relative_path (priv->dest, relname);
 
-  g_free (relname);
+#ifdef DEBUG
+  {
+    gchar *root_uri = g_file_get_uri (root);
+    gchar *file_uri = g_file_get_uri (file);
+    gchar *dest_uri = g_file_get_uri (dst);
+
+    DBG ("root = %s, file = %s, dest = %s", root_uri, file_uri, dest_uri);
+
+    g_free (root_uri);
+    g_free (file_uri);
+    g_free (dest_uri);
+  }
+#endif
 
   if (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY) {
 
+    DBG ("Mkdir %s", relname);
     /* TODO: handle errors */
     g_file_make_directory (dst, cancel, &error);
 
@@ -140,12 +161,24 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   } else {
     /* we assume it is a file */
 
+    DBG ("Copy  %s", relname);
+
+#ifdef DEBUG
+    {
+      gchar *uri = g_file_get_uri (file);
+      DBG ("Src = %s", uri);
+      g_free (uri);
+    }
+#endif
+
     /* TODO: handle errors */
     g_file_copy (file, dst, G_FILE_COPY_NONE, cancel, 
                  NULL, NULL,
                  &error);
 
   }
+
+  g_free (relname);
 }
 
 static const gchar *
@@ -161,5 +194,5 @@ get_attribute_list (CheckcopyFileHandler  *fhandler)
 CheckcopyProcessor*
 checkcopy_processor_new (GFile *dest)
 {
-  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "destinaton", dest, NULL);
+  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "destination", dest, NULL);
 }
