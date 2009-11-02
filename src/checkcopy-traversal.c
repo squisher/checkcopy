@@ -45,7 +45,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
   attribs = g_strconcat (G_FILE_ATTRIBUTE_STANDARD_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ",", 
                          checkcopy_file_handler_get_attribute_list (fhandler), NULL);
 
-  DBG ("Checking for '%s' attributes", attribs);
+  //DBG ("Checking for '%s' attributes", attribs);
 
   cancel = checkcopy_get_cancellable();
 

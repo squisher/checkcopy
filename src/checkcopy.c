@@ -33,6 +33,7 @@
 #include "checkcopy-cancel.h"
 #include "checkcopy-traversal.h"
 #include "checkcopy-planner.h"
+#include "checkcopy-processor.h"
 
 #include "progress-dialog.h"
 #include "error.h"
@@ -124,6 +125,7 @@ main (int argc, char *argv[])
   guint64 total_size = 0;
   gchar *size_str;
   CheckcopyPlanner *planner;
+  CheckcopyProcessor *proc;
   GFile * dest_folder;
 
 #if DEBUG > 0
@@ -193,8 +195,16 @@ main (int argc, char *argv[])
 
   g_free (size_str);
 
+  
+  proc = checkcopy_processor_new ();
+
+  checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (proc));
+
+
+
   g_object_unref (dest_folder);
   g_object_unref (planner);
+  g_object_unref (proc);
 
   return 1;
   /*--------------------------------------------------------------------------------*/
