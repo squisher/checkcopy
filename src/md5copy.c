@@ -33,7 +33,6 @@
 #include "global.h"
 
 #include "checkcopy-cancel.h"
-//#include "checkcopy-file-handler.h"
 #include "checkcopy-traversal.h"
 #include "checkcopy-planner.h"
 
@@ -47,9 +46,7 @@
  * prototypes 
  */
 
-guint64 get_dir_size (const gchar *path);
-guint64 get_size (const gchar *path);
-gchar * ask_for_destination ();
+GFile * ask_for_destination ();
 void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *msg, gpointer data);
 
 
@@ -57,8 +54,20 @@ void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *
  * globals 
  */
 
-gchar *dest = NULL;
-gchar *default_dest = NULL;
+static gchar *dest = NULL;
+static gchar *default_dest = NULL;
+static gboolean show_version = FALSE;
+
+static GOptionEntry optionentries[] = {
+  { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest, 
+    "Specifies the destination of the copy operation", "SOME_DIR"},
+  { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest, 
+    "Specifies the default destination of the copy operation", "SOME_DIR"},
+  { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
+    "Display program version and exit", NULL },
+  { NULL, ' ', 0, 0, NULL, NULL, NULL },
+};
+
 
 
 /* 
@@ -71,100 +80,45 @@ void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *
 }
 
 /* returns a string that must be freed */
-gchar *
+GFile *
 ask_for_destination (void)
 {
   GtkWidget *filechooser;
   gint res;
-  gchar *ret;
+  GFile *folder = NULL;
+  GFile *def_folder;
 
   filechooser = gtk_file_chooser_dialog_new ("Destination", NULL, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
                                              GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+
+  if (default_dest) {
+    gchar *uri;
+    
+    def_folder = g_file_new_for_commandline_arg (default_dest);
+    uri = g_file_get_uri (def_folder);
+
+    DBG ("Setting default destination to %s", uri);
+    gtk_file_chooser_set_uri (GTK_FILE_CHOOSER (filechooser), uri);
+  }
+
   res = gtk_dialog_run (GTK_DIALOG (filechooser));
 
   switch (res) {
     case GTK_RESPONSE_ACCEPT:
-    ret = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filechooser));
+      folder = gtk_file_chooser_get_current_folder_file (GTK_FILE_CHOOSER (filechooser));
       break;
-    default:
-      ret = NULL;
   }
   gtk_widget_destroy (filechooser);
 
-  return ret;
-}
-
-guint64 
-get_dir_size (const gchar *path)
-{
-  GDir *dir;
-  GError *error = NULL;
-  guint64 size = 0;
-  const gchar *fn;
-
-  dir = g_dir_open (path, 0, &error);
-  if (dir == NULL) {
-    show_error (error->message);
-    g_error_free (error);
-    exit (1);
-  }
-
-  //DBG ("Opening dir %s", path);
-
-  while ((fn = g_dir_read_name (dir))) {
-    gchar *full_fn = g_build_filename (path, fn, NULL);
-    size += get_size (full_fn);
-    //g_debug ("After %s the dir size is %llu", full_fn, size);
-    g_free (full_fn);
-  }
-
-  g_dir_close (dir);
-
-  return size;
-}  
-
-guint64 
-get_size (const gchar *path)
-{
-  struct stat st;
-  guint64 size = 0;
-
-  //g_debug ("Getting size of %s", path);
-
-  if (g_stat (path, &st) == 0) {
-    if (S_ISDIR (st.st_mode)) {
-      size = get_dir_size (path);
-    } else {
-      size = st.st_size;
-    }
-  } else {
-    g_message ("%s", g_strerror (errno));
-    show_error (_("Could not stat %s"), path);
-  }
-  //g_debug ("%s has size %lu", path, size);
-  return size;
+  return folder;
 }
 
 
-
-
-gboolean show_version = FALSE;
-
-static GOptionEntry optionentries[] = {
-  { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest, 
-    "Specifies the destination of the copy operation", "SOME_DIR"},
-  { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest, 
-    "Specifies the default destination of the copy operation", "SOME_DIR"},
-  { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
-    "Display program version and exit", NULL },
-  { NULL, ' ', 0, 0, NULL, NULL, NULL },
-};
 
 int 
 main (int argc, char *argv[])
 {
   GError *error = NULL;
-  int i;
   gchar *arg_description = "FILE/DIR {FILE/DIR2 ...}";
   GtkWidget *progress_dialog = NULL;
 #ifdef STATS
@@ -175,6 +129,7 @@ main (int argc, char *argv[])
   guint64 total_size = 0;
   gchar *size_str;
   CheckcopyPlanner *planner;
+  GFile * dest_folder;
 
 #if DEBUG > 0
   DBG ("Not handlingc critical as fatal until gdk bug is resolved");
@@ -219,16 +174,12 @@ main (int argc, char *argv[])
     return 1;
   }
 
-  /* check if a default destination was set */
-
-  if (default_dest)
-    g_chdir (default_dest);
-
   /* get a destination, if none was specified on the command line */
-  if (dest == NULL)
-    dest = ask_for_destination();
-  else
-    dest = g_strdup (dest);
+  if (dest == NULL) {
+    dest_folder = ask_for_destination();
+  } else {
+    dest_folder = g_file_new_for_commandline_arg (dest);
+  }
   
   /* user aborted */
   if (dest == NULL)
@@ -247,6 +198,7 @@ main (int argc, char *argv[])
 
   g_free (size_str);
 
+  g_object_unref (dest_folder);
   g_object_unref (planner);
 
   return 1;
@@ -271,21 +223,9 @@ main (int argc, char *argv[])
   g_free (display_dest);
 
 
-  /* Calculate the size of the whole job.
-   * Warning: This might be slow if a lot of files will be copied */
-
-  for (i=1; i<argc; i++) {
-    guint64 size = 0;
-    size = get_size (argv[i]);
-    total_size += size;
-  }
-
-  g_object_set (progress_dialog, "total_size", total_size, NULL);
-  DBG ("Size = %llu\n", total_size);
+  //g_object_set (progress_dialog, "total_size", total_size, NULL);
 
   
-  //cancel = g_cancellable_new ();
-
   /* transfer over to gtk */
   gtk_main ();
 
