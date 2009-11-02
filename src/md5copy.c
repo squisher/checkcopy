@@ -173,6 +173,7 @@ main (int argc, char *argv[])
   int len;
   gchar *display_dest;
   guint64 total_size = 0;
+  gchar *size_str;
   CheckcopyPlanner *planner;
 
 #if DEBUG > 0
@@ -239,7 +240,17 @@ main (int argc, char *argv[])
 
   checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (planner));
 
+  g_object_get (planner, "total-size", &total_size, NULL);
+  size_str = g_format_size_for_display (total_size);
+
+  g_message ("Total size is %s", size_str);
+
+  g_free (size_str);
+
+  g_object_unref (planner);
+
   return 1;
+  /*--------------------------------------------------------------------------------*/
 
   /* show the progress dialog */
   progress_dialog = progress_dialog_new ();
