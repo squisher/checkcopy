@@ -52,7 +52,7 @@ typedef struct {
 
 GType checkcopy_processor_get_type (void);
 
-CheckcopyProcessor* checkcopy_processor_new (void);
+CheckcopyProcessor* checkcopy_processor_new (GFile *dest);
 
 G_END_DECLS
 

@@ -77,8 +77,6 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
           child = g_file_resolve_relative_path (file, child_name);
 
-          g_free (child_name);
-
           if (child != NULL) {
             ret = checkcopy_traverse_file (fhandler, root, child, error);
             if (!ret) {
@@ -102,8 +100,6 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
       g_free (relname);
 #endif
     }
-
-    g_free (name);
 
     checkcopy_file_handler_process (fhandler, root, file, fileinfo);
 

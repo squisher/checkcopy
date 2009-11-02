@@ -179,10 +179,16 @@ main (int argc, char *argv[])
   }
   
   /* user aborted */
-  if (dest == NULL)
+  if (dest_folder == NULL)
     exit (0);
 
+#ifdef DEBUG
+  dest = g_file_get_uri (dest_folder);
+
   DBG ("Destination is %s\n", dest);
+
+  g_free (dest);
+#endif
 
   planner = checkcopy_planner_new ();
 
@@ -196,7 +202,7 @@ main (int argc, char *argv[])
   g_free (size_str);
 
   
-  proc = checkcopy_processor_new ();
+  proc = checkcopy_processor_new (dest_folder);
 
   checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (proc));
 
