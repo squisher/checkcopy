@@ -31,5 +31,8 @@ po/stamp-it
 src/.deps/
 src/Makefile
 src/Makefile.in
+src/checkcopy
+src/*.o
+src/tags
 stamp-h1
 autogen.configureflags
