@@ -10,6 +10,7 @@ checkcopy_headers = 				\
 	checkcopy-file-handler.h		\
 	checkcopy-planner.h			\
 	checkcopy-processor.h			\
+	checkcopy-input-stream.h		\
 	checkcopy-traversal.h
 
 checkcopy_SOURCES = 				\
@@ -21,6 +22,7 @@ checkcopy_SOURCES = 				\
 	checkcopy-file-handler.c		\
 	checkcopy-planner.c			\
 	checkcopy-processor.c			\
+	checkcopy-input-stream.c		\
 	checkcopy-traversal.c
 
 checkcopy_CFLAGS = 				\

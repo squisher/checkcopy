@@ -23,6 +23,8 @@
 
 #include <libxfce4util/libxfce4util.h>
 
+#include <gio/gio.h>
+
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
 #include "checkcopy-cancel.h"

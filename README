@@ -1,5 +1,5 @@
 ==============================================================================
-md5copy
+checkcopy
 =======
 
 Version 0.2, released 2009-0X-XX
@@ -21,7 +21,7 @@ This should allow easy bindings in file managers.
 
 
 W A R N I N G:
-  Similarly to how `cp' works, md5copy currently overwrites destination
+  Similarly to how `cp' works, checkcopy currently overwrites destination
   files without warning!
 
 
@@ -42,14 +42,14 @@ inside of a/.
 
 
 I recommend the program `cfv' to verify files. cfv has the `-r' switch, which
-allows you to verify a whole directory structure copied with md5copy.
+allows you to verify a whole directory structure copied with checkcopy.
 
 
 ==============================================================================
 Requirements
 ------------
 
-md5copy requires the following libraries to be installed:
+checkcopy requires the following libraries to be installed:
  * gtk+ toolkit:
     it was tested with gtk 2.12.11, but probably gtk 2.10 would suffice
  * mhash library:
@@ -95,8 +95,8 @@ http://mail-index.netbsd.org/pkgsrc-bugs/2008/10/19/msg028900.html :
         version one finds in the distribution tarballs.
 ---SNAP---
 
-This fix is NOT necessary with md5copy. In fact, if implemented compilation
-will fail, at least under Debian. Instead, md5copy's config.h is included
+This fix is NOT necessary with checkcopy. In fact, if implemented compilation
+will fail, at least under Debian. Instead, checkcopy's config.h is included
 after mhash.h, so that it overwrites any conflicting definitions. Compiler
 warnings about redefined preprocesor symbols are fixed in mhash-fix.h. Patches
 are welcome.
