@@ -52,7 +52,8 @@ typedef struct {
 
 GType checkcopy_input_stream_get_type (void);
 
-CheckcopyInputStream* checkcopy_input_stream_new (void);
+CheckcopyInputStream* checkcopy_input_stream_new (GInputStream *in);
+const gchar * checkcopy_input_stream_get_checksum (CheckcopyInputStream * in);
 
 G_END_DECLS
 

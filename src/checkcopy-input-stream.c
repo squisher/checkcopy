@@ -46,7 +46,6 @@ typedef struct _CheckcopyInputStreamPrivate CheckcopyInputStreamPrivate;
 struct _CheckcopyInputStreamPrivate {
   GChecksum *checksum;
   GChecksumType type;
-  int dummy;
 };
 
 static void
@@ -56,9 +55,6 @@ checkcopy_input_stream_get_property (GObject *object, guint property_id,
   CheckcopyInputStreamPrivate *priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (object));
 
   switch (property_id) {
-    case PROP_CHECKSUM:
-      g_value_set_static_string (value, get_checkcopy_string(CHECKCOPY_INPUT_STREAM (object)));
-      break;
     case PROP_CHECKSUM_TYPE:
       g_value_set_int (value, priv->type);
       break;
@@ -92,8 +88,6 @@ checkcopy_input_stream_class_init (CheckcopyInputStreamClass *klass)
   object_class->get_property = checkcopy_input_stream_get_property;
   object_class->set_property = checkcopy_input_stream_set_property;
 
-  g_object_class_install_property (object_class, PROP_CHECKSUM,
-           g_param_spec_string ("checksum", "Checksum", "Checksum", NULL, G_PARAM_READABLE));
   g_object_class_install_property (object_class, PROP_CHECKSUM_TYPE,
            g_param_spec_int ("checksum-type", "Checksum type", "Checksum type", 0, G_MAXINT, G_CHECKSUM_SHA1, G_PARAM_READWRITE));
 }
@@ -128,8 +122,24 @@ get_checkcopy_string (CheckcopyInputStream *stream)
 /*- public methods-*/
 /*******************/
 
-CheckcopyInputStream*
-checkcopy_input_stream_new (void)
+const gchar *
+checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
 {
-  return g_object_new (CHECKCOPY_TYPE_INPUT_STREAM, NULL);
+  CheckcopyInputStreamPrivate *priv = GET_PRIVATE (stream);
+
+  const gchar *checksum;
+
+  if (g_input_stream_is_closed (g_filter_input_stream_get_base_stream (G_FILTER_INPUT_STREAM (stream)))) {
+    checksum = g_checksum_get_string (priv->checksum);
+  } else {
+    checksum = NULL;
+  }
+
+  return checksum;
+}
+
+CheckcopyInputStream*
+checkcopy_input_stream_new (GInputStream *in)
+{
+  return g_object_new (CHECKCOPY_TYPE_INPUT_STREAM, "base-stream", in, NULL);
 }
