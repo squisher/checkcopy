@@ -28,6 +28,7 @@
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
 #include "checkcopy-cancel.h"
+#include "checkcopy-input-stream.h"
 
 /*- private prototypes -*/
 
@@ -161,6 +162,9 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
 
   } else {
+    CheckcopyInputStream *cin;
+    GInputStream *in;
+    GOutputStream *out;
     /* we assume it is a file */
 
     DBG ("Copy  %s", relname);
@@ -174,10 +178,30 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 
     /* TODO: handle errors */
+    /*
     g_file_copy (file, dst, G_FILE_COPY_NONE, cancel, 
                  NULL, NULL,
                  &error);
+                 */
+    in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
+    if (in == NULL) {
+      /* TODO: add to error list */
+      return;
+    }
+
+    cin = checkcopy_input_stream_new (in);
+
+    out = G_OUTPUT_STREAM (g_file_create (dst, G_FILE_CREATE_REPLACE_DESTINATION, cancel, &error));
+
+    if (out == NULL) {
+      /* TODO: add to error list */
+      return;
+    }
+
+    g_output_stream_splice (out, G_INPUT_STREAM (cin), 
+                            G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                            cancel, &error);
   }
 
   g_free (relname);
