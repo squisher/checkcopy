@@ -146,7 +146,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     gchar *file_uri = g_file_get_uri (file);
     gchar *dest_uri = g_file_get_uri (dst);
 
-    DBG ("root = %s, file = %s, dest = %s", root_uri, file_uri, dest_uri);
+    //DBG ("root = %s, file = %s, dest = %s", root_uri, file_uri, dest_uri);
 
     g_free (root_uri);
     g_free (file_uri);
@@ -165,16 +165,20 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     CheckcopyInputStream *cin;
     GInputStream *in;
     GOutputStream *out;
+    const gchar *checksum;
+
     /* we assume it is a file */
 
     DBG ("Copy  %s", relname);
 
+#if 0
 #ifdef DEBUG
     {
       gchar *uri = g_file_get_uri (file);
       DBG ("Src = %s", uri);
       g_free (uri);
     }
+#endif
 #endif
 
     /* TODO: handle errors */
@@ -186,15 +190,17 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
     if (in == NULL) {
+      DBG ("Could not open input file: %s", error->message);
       /* TODO: add to error list */
       return;
     }
 
-    cin = checkcopy_input_stream_new (in);
+    cin = checkcopy_input_stream_new (in, G_CHECKSUM_SHA1);
 
-    out = G_OUTPUT_STREAM (g_file_create (dst, G_FILE_CREATE_REPLACE_DESTINATION, cancel, &error));
+    out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
 
     if (out == NULL) {
+      DBG ("Could not create destination file: %s", error->message);
       /* TODO: add to error list */
       return;
     }
@@ -202,6 +208,13 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     g_output_stream_splice (out, G_INPUT_STREAM (cin), 
                             G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
                             cancel, &error);
+
+    checksum = checkcopy_input_stream_get_checksum (cin);
+    DBG ("Checksum: %s", checksum);
+
+    g_object_unref (out);
+    g_object_unref (in);
+    g_object_unref (cin);
   }
 
   g_free (relname);

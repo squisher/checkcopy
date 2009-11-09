@@ -61,7 +61,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
       GFileEnumerator *iter;
       GFileInfo *child_info;
 
-      DBG ("%s is a directory", name);
+      //DBG ("%s is a directory", name);
 
       checkcopy_file_handler_process (fhandler, root, file, fileinfo);
 
@@ -97,7 +97,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
       relname = g_file_get_relative_path (root, file);
 
-      DBG ("file %s", relname);
+      //DBG ("file %s", relname);
 
       g_free (relname);
 #endif

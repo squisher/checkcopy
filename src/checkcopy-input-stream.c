@@ -17,17 +17,42 @@
  *  
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <libxfce4util/libxfce4util.h>
+
 #include "checkcopy-input-stream.h"
 
 /*- private prototypes -*/
 
-const gchar * get_checkcopy_string (CheckcopyInputStream *stream);
+static GObject * checkcopy_input_stream_construct (GType type,
+                                                   guint n_construct_properties,
+                                                   GObjectConstructParam * construct_properties);
+static void checkcopy_input_stream_finalize (GObject *obj);
+static gssize   read_fn      (GInputStream        *stream,
+                              void                *buffer,
+                              gsize                count,
+                              GCancellable        *cancellable,
+                              GError             **error);
+#if 0
+static gssize   skip         (GInputStream        *stream,
+                              gsize                count,
+                              GCancellable        *cancellable,
+                              GError             **error);
+static gboolean close_fn     (GInputStream        *stream,
+                              GCancellable        *cancellable,
+                              GError             **error);
+#endif
+
 
 /*- globals -*/
 
+static GFilterInputStreamClass * parent_class = NULL;
+
 enum {
   PROP_0,
-  PROP_CHECKSUM,
   PROP_CHECKSUM_TYPE,
 };
 
@@ -82,41 +107,98 @@ static void
 checkcopy_input_stream_class_init (CheckcopyInputStreamClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  GInputStreamClass *in_class = G_INPUT_STREAM_CLASS (klass);
 
   g_type_class_add_private (klass, sizeof (CheckcopyInputStreamPrivate));
+  parent_class = g_type_class_peek_parent (klass);
 
   object_class->get_property = checkcopy_input_stream_get_property;
   object_class->set_property = checkcopy_input_stream_set_property;
 
+  object_class->finalize = checkcopy_input_stream_finalize;
+  object_class->constructor = checkcopy_input_stream_construct;
+
   g_object_class_install_property (object_class, PROP_CHECKSUM_TYPE,
-           g_param_spec_int ("checksum-type", "Checksum type", "Checksum type", 0, G_MAXINT, G_CHECKSUM_SHA1, G_PARAM_READWRITE));
+           g_param_spec_int ("checksum-type", "Checksum type", "Checksum type", 
+                             0, G_MAXINT, G_CHECKSUM_SHA1, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+
+  in_class->read_fn = read_fn;
+  //in_class->skip = skip;
+  //in_class->close_fn = close_fn;
+}
+
+static GObject *
+checkcopy_input_stream_construct (GType type, guint n_construct_properties, GObjectConstructParam * construct_properties)
+{
+  GObject *obj;
+  CheckcopyInputStreamPrivate *priv;
+
+  obj = G_OBJECT_CLASS (parent_class)->constructor (type, n_construct_properties, construct_properties);
+  priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (obj));
+
+  //DBG ("Using checksum type %d, sha1 = %d", priv->type, G_CHECKSUM_SHA1);
+
+  priv->checksum = g_checksum_new (priv->type);
+
+  return obj;
 }
 
 static void
-checkcopy_input_stream_init (CheckcopyInputStream *self)
+checkcopy_input_stream_init (CheckcopyInputStream * self)
 {
 }
 
+static void
+checkcopy_input_stream_finalize (GObject *obj)
+{
+  CheckcopyInputStream * stream = CHECKCOPY_INPUT_STREAM (obj);
+  CheckcopyInputStreamPrivate * priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (stream));
+
+  g_checksum_free (priv->checksum);
+}
 
 /***************/
 /*- internals -*/
 /***************/
 
-const gchar *
-get_checkcopy_string (CheckcopyInputStream *stream)
+gssize   read_fn      (GInputStream        *stream,
+                       void                *buffer,
+                       gsize                count,
+                       GCancellable        *cancellable,
+                       GError             **error)
 {
-  CheckcopyInputStreamPrivate *priv = GET_PRIVATE (stream);
+  CheckcopyInputStreamPrivate *priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (stream));
+  GFilterInputStream *filter_stream = G_FILTER_INPUT_STREAM (stream);
+  GInputStream *base_stream = filter_stream->base_stream;
+  gssize nread;
 
-  GError *error = NULL;
-  const gchar *str;
+  nread = g_input_stream_read (base_stream, buffer, count, cancellable, error);
 
-  str = g_checksum_get_string (priv->checksum);
+  g_checksum_update (priv->checksum, buffer, nread);
 
-  g_input_stream_close (G_FILTER_INPUT_STREAM(stream)->base_stream, NULL, &error);
-  g_input_stream_close (G_INPUT_STREAM (stream), NULL, &error);
-
-  return str;
+  return nread;
 }
+
+#if 0
+gssize   skip         (GInputStream        *stream,
+                       gsize                count,
+                       GCancellable        *cancellable,
+                       GError             **error)
+{
+  GFilterInputStream *filter_stream = G_FILTER_INPUT_STREAM (stream);
+  GInputStream *base_stream = filter_stream->base_stream;
+
+  return g_input_stream_skip (base_stream, count, cancellable, error);
+}
+
+gboolean close_fn     (GInputStream        *stream,
+                       GCancellable        *cancellable,
+                       GError             **error)
+{
+  return TRUE;
+}
+#endif
+
 
 /*******************/
 /*- public methods-*/
@@ -126,10 +208,12 @@ const gchar *
 checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
 {
   CheckcopyInputStreamPrivate *priv = GET_PRIVATE (stream);
+  GFilterInputStream *filter = G_FILTER_INPUT_STREAM (stream);
+  GInputStream *base = filter->base_stream;
 
   const gchar *checksum;
 
-  if (g_input_stream_is_closed (g_filter_input_stream_get_base_stream (G_FILTER_INPUT_STREAM (stream)))) {
+  if (g_input_stream_is_closed (base)) {
     checksum = g_checksum_get_string (priv->checksum);
   } else {
     checksum = NULL;
@@ -139,7 +223,10 @@ checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
 }
 
 CheckcopyInputStream*
-checkcopy_input_stream_new (GInputStream *in)
+checkcopy_input_stream_new (GInputStream *in, GChecksumType type)
 {
-  return g_object_new (CHECKCOPY_TYPE_INPUT_STREAM, "base-stream", in, NULL);
+  return g_object_new (CHECKCOPY_TYPE_INPUT_STREAM,
+                       "base-stream", in,
+                       "checksum-type", type,
+                       NULL);
 }
