@@ -32,8 +32,8 @@
 
 #include "checkcopy-cancel.h"
 #include "checkcopy-traversal.h"
-#include "checkcopy-planner.h"
 #include "checkcopy-processor.h"
+#include "checkcopy-worker.h"
 
 #include "progress-dialog.h"
 #include "error.h"
@@ -122,11 +122,10 @@ main (int argc, char *argv[])
 #endif
   int len;
   gchar *display_dest;
-  guint64 total_size = 0;
-  gchar *size_str;
-  CheckcopyPlanner *planner;
-  CheckcopyProcessor *proc;
   GFile * dest_folder;
+  GAsyncQueue * queue;
+  CheckcopyWorkerParams *worker_params;
+  int i;
 
 #if DEBUG > 0
   DBG ("Not handlingc critical as fatal until gdk bug is resolved");
@@ -190,34 +189,35 @@ main (int argc, char *argv[])
   g_free (dest);
 #endif
 
-  planner = checkcopy_planner_new ();
-
-  checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (planner));
-
-  g_object_get (planner, "total-size", &total_size, NULL);
-  size_str = g_format_size_for_display (total_size);
-
-  g_message ("Total size is %s", size_str);
-
-  g_free (size_str);
-
-  
-  proc = checkcopy_processor_new (dest_folder);
-
-  checkcopy_traverse (argv+1, argc-1, CHECKCOPY_FILE_HANDLER (proc));
-
-
-
-  g_object_unref (dest_folder);
-  g_object_unref (planner);
-  g_object_unref (proc);
-
-  return 1;
-  /*--------------------------------------------------------------------------------*/
-
   /* show the progress dialog */
   progress_dialog = progress_dialog_new ();
   gtk_widget_show (progress_dialog);
+
+  /* prepare the worker thread */
+  worker_params = g_new0 (CheckcopyWorkerParams, 1);
+
+  queue = g_async_queue_new_full ((GDestroyNotify) g_object_unref);
+  worker_params->queue = queue;
+  worker_params->dest = dest_folder;
+  
+  for (i=1; i<argc; i++) {
+    g_async_queue_push (queue, g_file_new_for_commandline_arg (argv[i]));
+  }
+
+  g_thread_create ((GThreadFunc) checkcopy_worker, worker_params, FALSE, NULL);
+
+
+  /* transfer over to gtk */
+  gtk_main ();
+
+  g_async_queue_unref (queue);
+
+  /* finalization */
+  gdk_threads_leave ();
+
+  return EXIT_SUCCESS;
+  /*--------------------------------------------------------------------------------*/
+
 
   progress_dialog_set_status (PROGRESS_DIALOG (progress_dialog), PROGRESS_DIALOG_STATUS_CALCULATING_SIZE);
 
@@ -238,12 +238,8 @@ main (int argc, char *argv[])
   //g_object_set (progress_dialog, "total_size", total_size, NULL);
 
   
-  /* transfer over to gtk */
-  gtk_main ();
 
   
-  /* finalization */
-  gdk_threads_leave ();
 
   g_free (dest);
 

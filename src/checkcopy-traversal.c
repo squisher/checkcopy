@@ -28,12 +28,12 @@
 
 /* internals */
 
-gboolean checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error);
+static gboolean checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error);
 
 
 /* implementation */
 
-gboolean
+static gboolean
 checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error)
 {
   GFileInfo *fileinfo;
@@ -113,22 +113,36 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
   return aborted;
 }
 
+/* public */
+
 void 
-checkcopy_traverse (gchar **files, const gint count, CheckcopyFileHandler *fhandler)
+checkcopy_traverse_args (gchar **files, const gint count, CheckcopyFileHandler *fhandler)
 {
   int i;
-  GError *error = NULL;
 
   for (i=0; i<count; i++) {
     GFile *file;
-    GFile *root;
    
     file = g_file_new_for_commandline_arg (files[i]);
-    root = g_file_get_parent (file);
 
-    checkcopy_traverse_file (fhandler, root, file, &error);
+    checkcopy_traverse (file, fhandler);
 
     g_object_unref (file);
-    g_object_unref (root);
   }
+}
+
+void
+checkcopy_traverse (GFile *file, CheckcopyFileHandler *fhandler)
+{
+  GFile * root;
+  GError * error = NULL;
+
+  g_object_ref (file);
+  root = g_file_get_parent (file);
+
+  checkcopy_traverse_file (fhandler, root, file, &error);
+  /* FIXME: handle the error */
+
+  g_object_unref (file);
+  g_object_unref (root);
 }

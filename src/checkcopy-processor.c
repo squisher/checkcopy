@@ -33,6 +33,7 @@
 /*- private prototypes -*/
 
 static void checkcopy_processor_file_handler_init (CheckcopyFileHandlerInterface *iface, gpointer data);
+static void checkcopy_processor_finalize (GObject *obj);
 static void process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info);
 static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 
@@ -83,7 +84,7 @@ checkcopy_processor_set_property (GObject *object, guint property_id,
 
   switch (property_id) {
     case PROP_DESTINATION:
-      priv->dest = g_value_get_object (value); 
+      priv->dest = g_value_dup_object (value); 
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -99,6 +100,7 @@ checkcopy_processor_class_init (CheckcopyProcessorClass *klass)
 
   object_class->get_property = checkcopy_processor_get_property;
   object_class->set_property = checkcopy_processor_set_property;
+  object_class->finalize = checkcopy_processor_finalize;
 
   g_object_class_install_property (object_class, PROP_DESTINATION,
            g_param_spec_object ("destination", "Destination folder", "Destination folder", G_TYPE_FILE, G_PARAM_READWRITE));
@@ -114,6 +116,15 @@ checkcopy_processor_file_handler_init (CheckcopyFileHandlerInterface *iface, gpo
 static void
 checkcopy_processor_init (CheckcopyProcessor *self)
 {
+}
+
+static void
+checkcopy_processor_finalize (GObject *obj)
+{
+  CheckcopyProcessor *self = CHECKCOPY_PROCESSOR (obj);
+  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (self));
+
+  g_object_unref (priv->dest);
 }
 
 

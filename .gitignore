@@ -34,5 +34,6 @@ src/Makefile.in
 src/checkcopy
 src/*.o
 src/tags
+src/core*
 stamp-h1
 autogen.configureflags

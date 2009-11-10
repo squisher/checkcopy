@@ -15,18 +15,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#ifndef _HAVE_CHECKCOPY_TRAVERSAL
-#define _HAVE_CHECKCOPY_TRAVERSAL
+#ifndef _HAVE_CHECKCOPY_WORKER
+#define _HAVE_CHECKCOPY_WORKER
 
+#include <glib.h>
 #include <gio/gio.h>
-
-#include "checkcopy-file-handler.h"
 
 G_BEGIN_DECLS
 
-void checkcopy_traverse_args (gchar **files, const gint count, CheckcopyFileHandler *fhandler);
-void checkcopy_traverse (GFile *file, CheckcopyFileHandler *fhandler);
+typedef struct {
+  GAsyncQueue * queue;
+  GFile * dest;
+} CheckcopyWorkerParams;
+
+void checkcopy_worker (CheckcopyWorkerParams * params) G_GNUC_NORETURN;
 
 G_END_DECLS
 
-#endif /* _HAVE_CHECKCOPY_TRAVERSAL */
+#endif /* _HAVE_CHECKCOPY_WORKER */

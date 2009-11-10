@@ -11,11 +11,13 @@ checkcopy_headers = 				\
 	checkcopy-planner.h			\
 	checkcopy-processor.h			\
 	checkcopy-input-stream.h		\
+	checkcopy-worker.h			\
+	checkcopy-file-info.h			\
 	checkcopy-traversal.h
 
 checkcopy_SOURCES = 				\
 	$(checkcopy_headers)			\
-	checkcopy.c				\
+	checkcopy-main.c			\
 	error.c					\
 	progress-dialog.c			\
 	checkcopy-cancel.c			\
@@ -23,6 +25,7 @@ checkcopy_SOURCES = 				\
 	checkcopy-planner.c			\
 	checkcopy-processor.c			\
 	checkcopy-input-stream.c		\
+	checkcopy-worker.c			\
 	checkcopy-traversal.c
 
 checkcopy_CFLAGS = 				\
