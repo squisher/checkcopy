@@ -23,6 +23,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include "progress-dialog.h"
+
 G_BEGIN_DECLS
 
 #define CHECKCOPY_TYPE_PROCESSOR checkcopy_processor_get_type()
@@ -52,7 +54,7 @@ typedef struct {
 
 GType checkcopy_processor_get_type (void);
 
-CheckcopyProcessor* checkcopy_processor_new (GFile *dest);
+CheckcopyProcessor* checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest);
 
 G_END_DECLS
 

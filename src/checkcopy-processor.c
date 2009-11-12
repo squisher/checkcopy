@@ -42,6 +42,7 @@ static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 enum {
   PROP_0,
   PROP_DESTINATION,
+  PROP_PROGRESS_DIALOG,
 };
 
 
@@ -59,6 +60,7 @@ typedef struct _CheckcopyProcessorPrivate CheckcopyProcessorPrivate;
 
 struct _CheckcopyProcessorPrivate {
   GFile *dest;
+  ProgressDialog * progress_dialog;
 };
 
 static void
@@ -70,6 +72,9 @@ checkcopy_processor_get_property (GObject *object, guint property_id,
   switch (property_id) {
     case PROP_DESTINATION:
       g_value_set_object (value, priv->dest); 
+      break;
+    case PROP_PROGRESS_DIALOG:
+      g_value_set_object (value, priv->progress_dialog);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -85,6 +90,9 @@ checkcopy_processor_set_property (GObject *object, guint property_id,
   switch (property_id) {
     case PROP_DESTINATION:
       priv->dest = g_value_dup_object (value); 
+      break;
+    case PROP_PROGRESS_DIALOG:
+      priv->progress_dialog = g_value_dup_object (value);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -104,6 +112,8 @@ checkcopy_processor_class_init (CheckcopyProcessorClass *klass)
 
   g_object_class_install_property (object_class, PROP_DESTINATION,
            g_param_spec_object ("destination", "Destination folder", "Destination folder", G_TYPE_FILE, G_PARAM_READWRITE));
+  g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
+           g_param_spec_object ("progress-dialog", "Progress dialog", "Progress dialog", TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
 }
 
 static void
@@ -125,12 +135,76 @@ checkcopy_processor_finalize (GObject *obj)
   CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (self));
 
   g_object_unref (priv->dest);
+  g_object_unref (priv->progress_dialog);
 }
 
 
 /***************/
 /*- internals -*/
 /***************/
+
+/* this function is based on g_output_stream_splice */
+static gssize  
+splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *in, GCancellable *cancellable, GError **error)
+{
+  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+
+  GInputStream *source;
+  gssize n_read, n_written;
+  gssize bytes_copied;
+  char buffer[8192], *p;
+  gboolean res;
+
+  g_assert (stream != NULL);
+  g_assert (in != NULL);
+  g_assert (error == NULL || *error == NULL);
+
+  source = G_INPUT_STREAM (in);
+
+  bytes_copied = 0;
+  
+  res = TRUE;
+  do 
+    {
+      n_read = g_input_stream_read (source, buffer, sizeof (buffer), cancellable, error);
+      if (n_read == -1)
+        {
+          res = FALSE;
+          break;
+        }
+  
+      if (n_read == 0)
+        break;
+
+      p = buffer;
+      while (n_read > 0)
+        {
+          n_written = g_output_stream_write (stream, p, n_read, cancellable, error);
+
+          progress_dialog_thread_add_size (priv->progress_dialog, n_written);
+
+          if (n_written == -1)
+            {
+              res = FALSE;
+              break;
+            }
+
+          p += n_written;
+          n_read -= n_written;
+          bytes_copied += n_written;
+        }
+    }
+  while (res);
+
+  // FIXME: handle errors
+  g_input_stream_close (source, cancellable, NULL);
+  g_output_stream_close (stream, cancellable, NULL);
+
+  if (res)
+    return bytes_copied;
+
+  return -1;
+}
 
 static void
 process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info)
@@ -148,6 +222,8 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   if (relname == NULL)
     relname = g_file_get_basename (file);
   */
+
+  progress_dialog_thread_set_filename (priv->progress_dialog, relname);
 
   dst = g_file_resolve_relative_path (priv->dest, relname);
 
@@ -216,9 +292,12 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
       return;
     }
 
+    /*
     g_output_stream_splice (out, G_INPUT_STREAM (cin), 
                             G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
                             cancel, &error);
+                            */
+    splice (proc, out, cin, cancel, &error);
 
     checksum = checkcopy_input_stream_get_checksum (cin);
     DBG ("Checksum: %s", checksum);
@@ -242,7 +321,7 @@ get_attribute_list (CheckcopyFileHandler  *fhandler)
 /*******************/
 
 CheckcopyProcessor*
-checkcopy_processor_new (GFile *dest)
+checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest)
 {
-  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "destination", dest, NULL);
+  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "progress-dialog", progress_dialog, "destination", dest, NULL);
 }

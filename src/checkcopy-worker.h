@@ -21,11 +21,14 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include "progress-dialog.h"
+
 G_BEGIN_DECLS
 
 typedef struct {
   GAsyncQueue * queue;
   GFile * dest;
+  ProgressDialog * progress_dialog;
 } CheckcopyWorkerParams;
 
 void checkcopy_worker (CheckcopyWorkerParams * params) G_GNUC_NORETURN;

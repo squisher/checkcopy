@@ -114,9 +114,9 @@ ask_for_destination (void)
 int 
 main (int argc, char *argv[])
 {
-  GError *error = NULL;
-  gchar *arg_description = "FILE/DIR {FILE/DIR2 ...}";
-  GtkWidget *progress_dialog = NULL;
+  GError * error = NULL;
+  gchar * arg_description = "FILE/DIR {FILE/DIR2 ...}";
+  ProgressDialog * progress_dialog = NULL;
 #ifdef STATS
   gchar *stats;
 #endif
@@ -191,7 +191,7 @@ main (int argc, char *argv[])
 
   /* show the progress dialog */
   progress_dialog = progress_dialog_new ();
-  gtk_widget_show (progress_dialog);
+  gtk_widget_show (GTK_WIDGET (progress_dialog));
 
   /* prepare the worker thread */
   worker_params = g_new0 (CheckcopyWorkerParams, 1);
@@ -199,6 +199,7 @@ main (int argc, char *argv[])
   queue = g_async_queue_new_full ((GDestroyNotify) g_object_unref);
   worker_params->queue = queue;
   worker_params->dest = dest_folder;
+  worker_params->progress_dialog = progress_dialog;
   
   for (i=1; i<argc; i++) {
     g_async_queue_push (queue, g_file_new_for_commandline_arg (argv[i]));
@@ -219,9 +220,7 @@ main (int argc, char *argv[])
   /*--------------------------------------------------------------------------------*/
 
 
-  progress_dialog_set_status (PROGRESS_DIALOG (progress_dialog), PROGRESS_DIALOG_STATUS_CALCULATING_SIZE);
-
-  error_add_dialog (PROGRESS_DIALOG (progress_dialog));
+  //error_add_dialog (PROGRESS_DIALOG (progress_dialog));
 
 
 #define MAX_FILENAME_LEN 80

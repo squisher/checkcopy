@@ -56,7 +56,7 @@ typedef struct
   guint64 curr_size;
   gint i;
 
-  gint blocks_per_update;
+  gssize bytes_per_percent;
 
   GTimeVal tv_start;
   GTimeVal tv_end;
@@ -64,7 +64,9 @@ typedef struct
   ProgressDialogStatus status;
 } ProgressDialogPrivate;
 
-/* globals */
+
+/* private prototypes */
+
 static void progress_dialog_class_init (ProgressDialogClass * klass);
 static void progress_dialog_init (ProgressDialog * sp);
 
@@ -76,6 +78,12 @@ static void progress_dialog_set_property (GObject * object, guint prop_id, const
 static void cb_button_close_clicked (GtkWidget *button, ProgressDialog * dialog);
 */
 static gboolean cb_dialog_delete (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv);
+static void progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
+static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
+static void progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
+static void progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn);
+
+/* globals */
 
 enum
 {
@@ -193,7 +201,7 @@ progress_dialog_init (ProgressDialog * obj)
 
   /* file label */
   
-  priv->file_label = gtk_label_new ("{Filename}");
+  priv->file_label = gtk_label_new ("...");
   gtk_misc_set_alignment (GTK_MISC (priv->file_label), 0.1, 0.0);
   gtk_label_set_justify (GTK_LABEL (priv->file_label), GTK_JUSTIFY_LEFT);
   gtk_label_set_selectable (GTK_LABEL (priv->file_label), TRUE);
@@ -216,8 +224,6 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_show (GTK_WIDGET (hbox));
   
   g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_dialog_delete), priv);
-
-  priv->blocks_per_update = 128;
 }
 
 static void
@@ -243,7 +249,6 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
 {
   ProgressDialog *dialog = PROGRESS_DIALOG (object);
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-  int t;
 
   switch (prop_id) {
   case PROP_STATUS:
@@ -252,9 +257,7 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
   case PROP_SIZE:
     priv->total_size =  g_value_get_uint64(value);
 
-    t = (priv->total_size / BUF_SIZE) / PROGRESS_UPDATE_NUM;
-    priv->blocks_per_update = ( t < MIN_BLOCKS_PER_UPDATE ? MIN_BLOCKS_PER_UPDATE : t);
-    //g_debug ("%d => blocks_per_update = %d", t, priv->blocks_per_update);
+    priv->bytes_per_percent = priv->total_size / 100;
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -302,6 +305,81 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
   g_free (text_time);  
 }
 
+static void
+progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+  gint cur_permil = 0;
+  gint permil = 0;
+  gchar *text = NULL;
+
+  priv->curr_size += size;
+
+  cur_permil = (gint) (gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (priv->progress_bar)) * 1000.0);
+  permil = (gint) ((gdouble) priv->curr_size / (gdouble) priv->total_size * 1000.0);
+
+  if (permil >= 1000) {
+    permil = 1000;
+    switch (priv->status) {
+    case PROGRESS_DIALOG_STATUS_INIT:
+      g_error ("Done while initializing");
+      break;
+    case PROGRESS_DIALOG_STATUS_CALCULATING_SIZE:
+      g_error ("Done while calculating size");
+      break;
+    case PROGRESS_DIALOG_STATUS_COPYING:
+    case PROGRESS_DIALOG_STATUS_RUNNING:
+      text = g_strdup ("100%");
+      break;
+    case PROGRESS_DIALOG_STATUS_FAILED:
+      text = g_strdup (_("Failed"));
+      break;
+    case PROGRESS_DIALOG_STATUS_CANCELLED:
+      text = g_strdup (_("Cancelled"));
+      break;
+    case PROGRESS_DIALOG_STATUS_COMPLETED:
+      text = g_strdup (_("Completed"));
+      break;
+    }
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), permil / 1000.0);
+  }
+  else if (permil < 0) {
+    permil = 0;
+    text = g_strdup ("0%");
+    g_warning ("Negative progress");
+  }
+  // FIXME: improve the fraction >= cur_fraction check, which will pretty much always succeed because it's a double
+  else if (priv->status == PROGRESS_DIALOG_STATUS_COPYING && permil >= cur_permil) {
+    text = g_strdup_printf ("%d%%  ", permil / 10);
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), permil / 1000.0);
+  }
+  else if (permil < cur_permil) {
+    return;
+  }
+
+  if (text != NULL) {
+    gtk_progress_bar_set_text (GTK_PROGRESS_BAR (priv->progress_bar), text);
+    g_free (text);
+  }
+}
+
+static void 
+progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+  int len;
+
+  len = strlen (fn);
+  if (len > MAX_FILENAME_LEN) {
+    gchar *truncated;
+
+    truncated = g_strdup_printf ("...%s", fn + (len - MAX_FILENAME_LEN));
+    gtk_label_set_text (GTK_LABEL (priv->file_label), truncated);
+    g_free (truncated);
+  } else 
+    gtk_label_set_text (GTK_LABEL (priv->file_label), fn);
+}
+
 /* callbacks */
 /*
 static void
@@ -327,6 +405,42 @@ cb_dialog_delete (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPriva
   return FALSE;
 }
 
+static void
+progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
+{
+  progress_dialog_set_status (dialog, status);
+  set_action_text (dialog, status, text);
+}
+
+static void
+progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  priv->status = status;
+
+  if (status == PROGRESS_DIALOG_STATUS_CALCULATING_SIZE) {
+    set_action_text (dialog, status, "Calculating size....");
+    g_get_current_time (&(priv->tv_start));
+  } else {
+    g_get_current_time (&(priv->tv_end));
+
+    if (status == PROGRESS_DIALOG_STATUS_COPYING) {
+      set_action_text (dialog, status, "Copying....");
+    }
+    gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
+  }
+
+  if (status == PROGRESS_DIALOG_STATUS_COMPLETED) {
+    //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
+    
+    // FIXME why add size? To update the status? Seems clumsy
+    progress_dialog_add_size (dialog, 0);
+
+    progress_dialog_set_filename (dialog, "");
+  }
+}
+
 /*        */
 /* public */
 /*        */
@@ -345,117 +459,43 @@ progress_dialog_get_progress_bar_fraction (ProgressDialog * dialog)
 
 /* setters */
 void
-progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
+progress_dialog_thread_add_size (ProgressDialog * dialog, guint64 size)
 {
-  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-  gdouble cur_fraction = 0;
-  gdouble fraction = 0;
-  gchar *text = NULL;
-
-  priv->curr_size += size;
-
-  priv->i = (priv->i + 1) % priv->blocks_per_update;
-  if (priv->i != 0)
-    return;
-
-  cur_fraction = gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (priv->progress_bar));
-  fraction = (gdouble) priv->curr_size / (gdouble) priv->total_size;
-
-  if (fraction >= 1.0) {
-    fraction = 1.0;
-    switch (priv->status) {
-    case PROGRESS_DIALOG_STATUS_INIT:
-      g_error ("Done while initializing");
-      break;
-    case PROGRESS_DIALOG_STATUS_CALCULATING_SIZE:
-      g_error ("Done while calculating size");
-      break;
-    case PROGRESS_DIALOG_STATUS_RUNNING:
-      text = g_strdup ("100%");
-      break;
-    case PROGRESS_DIALOG_STATUS_FAILED:
-      text = g_strdup (_("Failed"));
-      break;
-    case PROGRESS_DIALOG_STATUS_CANCELLED:
-      text = g_strdup (_("Cancelled"));
-      break;
-    case PROGRESS_DIALOG_STATUS_COMPLETED:
-      text = g_strdup (_("Completed"));
-      break;
-    }
-  }
-  else if (fraction < 0.0) {
-    fraction = 0.0;
-    text = g_strdup ("0%");
-  }
-  else if (priv->status == PROGRESS_DIALOG_STATUS_RUNNING && fraction >= cur_fraction) {
-    text = g_strdup_printf ("%d%%  ", (int) (fraction * 100));
-  }
-  else if (fraction < cur_fraction) {
-    return;
-  }
-
-  gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), fraction);
-  gtk_progress_bar_set_text (GTK_PROGRESS_BAR (priv->progress_bar), text);
-
-  g_free (text);
+  gdk_threads_enter ();
+  progress_dialog_add_size (dialog, size);
+  gdk_threads_leave ();
 }
 
 void
-progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status)
+progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus status)
 {
-  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-
-  priv->status = status;
-
-  if (status == PROGRESS_DIALOG_STATUS_CALCULATING_SIZE) {
-    set_action_text (dialog, status, "Calculating size....");
-    g_get_current_time (&(priv->tv_start));
-  } else {
-    g_get_current_time (&(priv->tv_end));
-    gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
-  }
-
-  if (status == PROGRESS_DIALOG_STATUS_COMPLETED) {
-    //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
-    
-    priv->i = priv->blocks_per_update - 1;
-    progress_dialog_add_size (dialog, 0);
-
-    progress_dialog_set_filename (dialog, "");
-  }
-}
-
-void
-progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
-{
+  gdk_threads_enter ();
   progress_dialog_set_status (dialog, status);
-  set_action_text (dialog, status, text);
+  gdk_threads_leave ();
+}
+
+void
+progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
+{
+  gdk_threads_enter ();
+  progress_dialog_set_status_with_text (dialog, status, text);
+  gdk_threads_leave ();
 }
 
 void 
-progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
+progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn)
 {
-  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-  int len;
-
-  len = strlen (fn);
-  if (len > MAX_FILENAME_LEN) {
-    gchar *truncated;
-
-    truncated = g_strdup_printf ("...%s", fn + (len - MAX_FILENAME_LEN));
-    gtk_label_set_text (GTK_LABEL (priv->file_label), truncated);
-    g_free (truncated);
-  } else 
-    gtk_label_set_text (GTK_LABEL (priv->file_label), fn);
+  gdk_threads_enter ();
+  progress_dialog_set_filename (dialog, fn);
+  gdk_threads_leave ();
 }
 
 /* constructor */
-GtkWidget *
+ProgressDialog *
 progress_dialog_new (void)
 {
   ProgressDialog *obj;
   obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "modal", TRUE, NULL));
     
-  return GTK_WIDGET (obj);
+  return obj;
 }

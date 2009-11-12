@@ -33,12 +33,14 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   GAsyncQueue *ext_q;
   GQueue *int_q;
 
+  ProgressDialog * progress_dialog;
   CheckcopyPlanner *planner;
   CheckcopyProcessor *proc;
 
 
-  planner = checkcopy_planner_new ();
-  proc = checkcopy_processor_new (params->dest);
+  progress_dialog = params->progress_dialog;
+  planner = checkcopy_planner_new (progress_dialog);
+  proc = checkcopy_processor_new (progress_dialog, params->dest);
   g_object_unref (params->dest);
 
   int_q = g_queue_new ();
@@ -58,6 +60,8 @@ checkcopy_worker (CheckcopyWorkerParams * params)
     */
     file = g_async_queue_pop (ext_q);
 
+    progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_CALCULATING_SIZE);
+
     do {
       g_queue_push_tail (int_q, file);
       checkcopy_traverse (file, CHECKCOPY_FILE_HANDLER (planner));
@@ -75,6 +79,8 @@ checkcopy_worker (CheckcopyWorkerParams * params)
     g_free (size_str);
     }
 #endif
+
+    progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COPYING);
 
     /* Now process the internal queue */
     while ((file = g_queue_pop_head (int_q)) != NULL) {

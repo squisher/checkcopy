@@ -30,6 +30,7 @@
 /*- private prototypes -*/
 
 static void checkcopy_planner_file_handler_init (CheckcopyFileHandlerInterface *iface, gpointer data);
+static void checkcopy_planner_finalize (GObject *obj);
 static void process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info);
 static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 
@@ -38,6 +39,7 @@ static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 enum {
   PROP_0,
   PROP_TOTAL_SIZE,
+  PROP_PROGRESS_DIALOG,
 };
 
 
@@ -55,6 +57,7 @@ typedef struct _CheckcopyPlannerPrivate CheckcopyPlannerPrivate;
 
 struct _CheckcopyPlannerPrivate {
   goffset size;
+  ProgressDialog * progress_dialog;
 };
 
 static void
@@ -66,6 +69,9 @@ checkcopy_planner_get_property (GObject *object, guint property_id,
   switch (property_id) {
     case PROP_TOTAL_SIZE:
       g_value_set_int64 (value, priv->size);
+      break;
+    case PROP_PROGRESS_DIALOG:
+      g_value_set_object (value, priv->progress_dialog);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -82,6 +88,9 @@ checkcopy_planner_set_property (GObject *object, guint property_id,
     case PROP_TOTAL_SIZE:
       priv->size = g_value_get_int64 (value);
       break;
+    case PROP_PROGRESS_DIALOG:
+      priv->progress_dialog = g_value_dup_object (value);
+      break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -96,9 +105,12 @@ checkcopy_planner_class_init (CheckcopyPlannerClass *klass)
 
   object_class->get_property = checkcopy_planner_get_property;
   object_class->set_property = checkcopy_planner_set_property;
+  object_class->finalize = checkcopy_planner_finalize;
 
   g_object_class_install_property (object_class, PROP_TOTAL_SIZE,
            g_param_spec_int64 ("total-size", "Total size", "Total size", 0, G_MAXINT64, 0, G_PARAM_READABLE));
+  g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
+           g_param_spec_object ("progress-dialog", "Progress dialog", "Progress dialog", TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
 }
 
 static void
@@ -111,6 +123,15 @@ checkcopy_planner_file_handler_init (CheckcopyFileHandlerInterface *iface, gpoin
 static void
 checkcopy_planner_init (CheckcopyPlanner *self)
 {
+}
+
+static void
+checkcopy_planner_finalize (GObject *obj)
+{
+  CheckcopyPlanner * planner = CHECKCOPY_PLANNER (obj);
+  CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
+
+  g_object_unref (priv->progress_dialog);
 }
 
 
@@ -127,6 +148,8 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   priv->size += g_file_info_get_size (info);
 
   DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
+
+  g_object_set (priv->progress_dialog, "total-size", priv->size, NULL);
 }
 
 static const gchar *
@@ -140,7 +163,7 @@ get_attribute_list (CheckcopyFileHandler *fhandler)
 /*******************/
 
 CheckcopyPlanner*
-checkcopy_planner_new (void)
+checkcopy_planner_new (ProgressDialog * progress_dialog)
 {
-  return g_object_new (CHECKCOPY_TYPE_PLANNER, NULL);
+  return g_object_new (CHECKCOPY_TYPE_PLANNER, "progress-dialog", progress_dialog, NULL);
 }

@@ -22,6 +22,8 @@
 
 #include <glib-object.h>
 
+#include "progress-dialog.h"
+
 G_BEGIN_DECLS
 
 #define CHECKCOPY_TYPE_PLANNER checkcopy_planner_get_type()
@@ -51,7 +53,7 @@ typedef struct {
 
 GType checkcopy_planner_get_type (void);
 
-CheckcopyPlanner* checkcopy_planner_new (void);
+CheckcopyPlanner* checkcopy_planner_new (ProgressDialog * progress_dialog);
 
 G_END_DECLS
 

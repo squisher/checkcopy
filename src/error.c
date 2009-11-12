@@ -129,7 +129,8 @@ show_verror (char *fmt, va_list ap)
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
   } else {
-    progress_dialog_set_status_with_text (progress, PROGRESS_DIALOG_STATUS_FAILED, msg);
+    // FIXME
+    //progress_dialog_set_status_with_text (progress, PROGRESS_DIALOG_STATUS_FAILED, msg);
   }
   g_free (msg);
 }
