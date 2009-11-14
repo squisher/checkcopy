@@ -26,6 +26,7 @@ checkcopy_SOURCES = 				\
 	checkcopy-processor.c			\
 	checkcopy-input-stream.c		\
 	checkcopy-worker.c			\
+	checkcopy-file-info.c			\
 	checkcopy-traversal.c
 
 checkcopy_CFLAGS = 				\

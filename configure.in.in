@@ -9,7 +9,7 @@ dnl Initialize autoconf
 AC_COPYRIGHT([Copyright (c) 2008-2009 David Mohr <david@mcbf.net>])
 AC_INIT([checkcopy], [checkcopy_version()], [david@mcbf.net])
 AC_PREREQ([2.61])
-AC_CONFIG_SRCDIR([src/checkcopy.c])
+AC_CONFIG_SRCDIR([src/checkcopy-main.c])
 dnl AC_CONFIG_AUX_DIR([build-aux])
 
 dnl Initialize automake

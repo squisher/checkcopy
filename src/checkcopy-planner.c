@@ -25,6 +25,7 @@
 
 #include "checkcopy-planner.h"
 #include "checkcopy-file-handler.h"
+#include "checkcopy-file-info.h"
 
 
 /*- private prototypes -*/
@@ -145,11 +146,18 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   CheckcopyPlanner *planner = CHECKCOPY_PLANNER (fhandler);
   CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
 
+  CheckcopyChecksumType checksum_type;
+
   priv->size += g_file_info_get_size (info);
 
   DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
 
   g_object_set (priv->progress_dialog, "total-size", priv->size, NULL);
+
+
+  if ((checksum_type = checkcopy_file_info_get_checksum_type (file)) != CHECKCOPY_NO_CHECKSUM) {
+    checksum_file_info_parse_checksum_file (root, file, checksum_type);
+  }
 }
 
 static const gchar *

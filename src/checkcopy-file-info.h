@@ -23,14 +23,37 @@
 G_BEGIN_DECLS
 
 typedef enum {
-  CHECKCOPY_STATUS_; // FIXME
+  CHECKCOPY_STATUS_NONE,
+  CHECKCOPY_STATUS_VERIFIABLE,
+  CHECKCOPY_STATUS_VERIFIED,
+  CHECKCOPY_STATUS_VERIFICATION_FAILED,
+  CHECKCOPY_STATUS_COPIED,
 } CheckcopyFileStatus;
+
+typedef enum {
+  CHECKCOPY_MD5,
+  CHECKCOPY_SHA1,
+  CHECKCOPY_SHA256,
+  CHECKCOPY_NO_CHECKSUM, /* Has to be the last, so the order can 
+                            match checksum_type_extensions */
+} CheckcopyChecksumType;
 
 typedef struct {
   gchar *relname;
-  const gchar * checksum;
+  gchar * checksum;
+  CheckcopyChecksumType checksum_type;
   CheckcopyFileStatus status;
 } CheckcopyFileInfo;
+
+
+void checkcopy_file_info_init (void);
+void checkcopy_file_info_free (void);
+
+CheckcopyChecksumType checkcopy_file_info_get_checksum_type (GFile *file);
+void checksum_file_info_parse_checksum_file (GFile *root, GFile *file, CheckcopyChecksumType checksum_type);
+CheckcopyFileStatus checkcopy_file_info_check_file (gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
+CheckcopyChecksumType checkcopy_file_info_get_type (gchar *relname);
+GChecksumType checkcopy_checksum_type_to_gio (CheckcopyChecksumType type);
 
 G_END_DECLS
 

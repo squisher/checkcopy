@@ -27,6 +27,7 @@
 
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
+#include "checkcopy-file-info.h"
 #include "checkcopy-cancel.h"
 #include "checkcopy-input-stream.h"
 
@@ -253,6 +254,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     GInputStream *in;
     GOutputStream *out;
     const gchar *checksum;
+    CheckcopyChecksumType checksum_type;
 
     /* we assume it is a file */
 
@@ -269,11 +271,6 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 
     /* TODO: handle errors */
-    /*
-    g_file_copy (file, dst, G_FILE_COPY_NONE, cancel, 
-                 NULL, NULL,
-                 &error);
-                 */
     in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
     if (in == NULL) {
@@ -282,7 +279,11 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
       return;
     }
 
-    cin = checkcopy_input_stream_new (in, G_CHECKSUM_SHA1);
+    checksum_type = checkcopy_file_info_get_type (relname);
+    if (checksum_type == CHECKCOPY_NO_CHECKSUM)
+      checksum_type = CHECKCOPY_SHA1;
+
+    cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
 
     out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
 
@@ -292,15 +293,11 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
       return;
     }
 
-    /*
-    g_output_stream_splice (out, G_INPUT_STREAM (cin), 
-                            G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
-                            cancel, &error);
-                            */
     splice (proc, out, cin, cancel, &error);
 
     checksum = checkcopy_input_stream_get_checksum (cin);
-    DBG ("Checksum: %s", checksum);
+
+    checkcopy_file_info_check_file (relname, checksum, checksum_type);
 
     g_object_unref (out);
     g_object_unref (in);
