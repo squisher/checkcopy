@@ -351,7 +351,7 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
   // FIXME: improve the fraction >= cur_fraction check, which will pretty much always succeed because it's a double
   else if (priv->status == PROGRESS_DIALOG_STATUS_COPYING && permil >= cur_permil) {
     text = g_strdup_printf ("%d%%  ", permil / 10);
-    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), permil / 1000.0);
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), (gdouble) permil / 1000.0);
   }
   else if (permil < cur_permil) {
     return;
@@ -488,6 +488,19 @@ progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn)
   gdk_threads_enter ();
   progress_dialog_set_filename (dialog, fn);
   gdk_threads_leave ();
+}
+
+guint64
+progress_dialog_thread_get_current_size (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+  guint64 ret;
+
+  gdk_threads_enter ();
+  ret = priv->curr_size;
+  gdk_threads_leave ();
+
+  return ret;
 }
 
 /* constructor */

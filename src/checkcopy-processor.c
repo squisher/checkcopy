@@ -249,6 +249,8 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     g_file_make_directory (dst, cancel, &error);
 
 
+    progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
+
   } else {
     CheckcopyInputStream *cin;
     GInputStream *in;
@@ -310,7 +312,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 static const gchar *
 get_attribute_list (CheckcopyFileHandler  *fhandler)
 {
-  return "";
+  return G_FILE_ATTRIBUTE_STANDARD_SIZE;
 }
 
 /*******************/

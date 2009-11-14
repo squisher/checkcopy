@@ -90,6 +90,8 @@ checkcopy_worker (CheckcopyWorkerParams * params)
       g_object_unref (file);
     }
 
+    progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
+
     DBG ("Waiting for more things to do");
   }
 

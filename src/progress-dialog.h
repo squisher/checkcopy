@@ -70,6 +70,7 @@ void progress_dialog_thread_add_size (ProgressDialog * dialog, guint64 size);
 void progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
 void progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
 void progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn);
+guint64 progress_dialog_thread_get_current_size (ProgressDialog * dialog);
 
 ProgressDialog * progress_dialog_new ();
 
