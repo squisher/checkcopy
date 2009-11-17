@@ -40,7 +40,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
   const gchar *name;
   GCancellable *cancel;
   gchar *attribs;
-  gboolean aborted = FALSE;
+  gboolean done = TRUE;
 
   attribs = g_strconcat (G_FILE_ATTRIBUTE_STANDARD_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ",", 
                          checkcopy_file_handler_get_attribute_list (fhandler), NULL);
@@ -75,6 +75,9 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           gboolean ret;
           const gchar *child_name;
 
+          if (*error)
+            break;
+
           child_name = g_file_info_get_name (child_info);
 
           child = g_file_resolve_relative_path (file, child_name);
@@ -82,13 +85,21 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           if (child != NULL) {
             ret = checkcopy_traverse_file (fhandler, root, child, error);
             if (!ret) {
-              g_warning ("Error while traversing: %s", (*error)->message);
-              g_error_free (*error);
+              g_warning ("While traversing: %s", (*error)->message);
+
+              done = FALSE;
+              g_object_unref (child);
+              break;
             }
           }
 
           g_object_unref (child);
         } /* while */
+
+        if (*error) {
+          g_warning ("While getting next file: %s", (*error)->message);
+          done = FALSE;
+        }
       } /* if iter */
 
     } else {
@@ -104,13 +115,11 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
       checkcopy_file_handler_process (fhandler, root, file, fileinfo);
     }
-
-    aborted = TRUE;
   }
 
   g_free (attribs);
 
-  return aborted;
+  return done;
 }
 
 /* public */

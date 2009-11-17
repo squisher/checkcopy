@@ -25,6 +25,9 @@
 
 static GCancellable *cancel;
 
+
+/* public */
+
 void
 checkcopy_cancel_init (void)
 {

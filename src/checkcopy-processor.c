@@ -243,13 +243,24 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 
   if (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY) {
+    gboolean had_error = FALSE;
 
     DBG ("Mkdir %s", relname);
-    /* TODO: handle errors */
     g_file_make_directory (dst, cancel, &error);
 
+    if (error) {
+      if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+        /* not an error */
+      } else {
+        g_critical ("%s: %s", relname, error->message);
+        g_error_free (error);
+        had_error = TRUE;
+      }
+    }
 
-    progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
+    if (!had_error) {
+      progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
+    }
 
   } else {
     CheckcopyInputStream *cin;
@@ -272,38 +283,41 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 #endif
 
-    /* TODO: handle errors */
     in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
-    if (in == NULL) {
+    if (in == NULL || error) {
       DBG ("Could not open input file: %s", error->message);
-      /* TODO: add to error list */
-      return;
+      g_error_free (error);
+
+    } else {
+      /* created input stream successfully */
+
+      checksum_type = checkcopy_file_info_get_type (relname);
+      if (checksum_type == CHECKCOPY_NO_CHECKSUM)
+        checksum_type = CHECKCOPY_SHA1;
+
+      cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
+
+      out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
+
+      if (out == NULL || error) {
+        DBG ("Could not create destination file: %s", error->message);
+        g_error_free (error);
+
+      } else {
+        /* created output stream */
+        splice (proc, out, cin, cancel, &error);
+
+        checksum = checkcopy_input_stream_get_checksum (cin);
+
+        checkcopy_file_info_check_file (relname, checksum, checksum_type);
+
+        g_object_unref (out);
+      }
+
+      g_object_unref (in);
+      g_object_unref (cin);
     }
-
-    checksum_type = checkcopy_file_info_get_type (relname);
-    if (checksum_type == CHECKCOPY_NO_CHECKSUM)
-      checksum_type = CHECKCOPY_SHA1;
-
-    cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
-
-    out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
-
-    if (out == NULL) {
-      DBG ("Could not create destination file: %s", error->message);
-      /* TODO: add to error list */
-      return;
-    }
-
-    splice (proc, out, cin, cancel, &error);
-
-    checksum = checkcopy_input_stream_get_checksum (cin);
-
-    checkcopy_file_info_check_file (relname, checksum, checksum_type);
-
-    g_object_unref (out);
-    g_object_unref (in);
-    g_object_unref (cin);
   }
 
   g_free (relname);

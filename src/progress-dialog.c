@@ -35,6 +35,7 @@
 #include <libxfcegui4/libxfcegui4.h>
 
 #include "progress-dialog.h"
+#include "checkcopy-cancel.h"
 
 #define BORDER 10
 #define BUF_SIZE 8192
@@ -74,13 +75,11 @@ static void progress_dialog_get_property (GObject * object, guint prop_id, GValu
 static void progress_dialog_set_property (GObject * object, guint prop_id, const GValue * value,
                                                  GParamSpec * pspec);
 
-/*
-static void cb_button_close_clicked (GtkWidget *button, ProgressDialog * dialog);
-*/
-static gboolean cb_dialog_delete (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv);
-static void progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
+static gboolean cb_abort (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv);
+static void cb_cancel (GCancellable *cancel, ProgressDialog * dialog);
 static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
-static void progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
+static gboolean progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
+static gboolean progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
 static void progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn);
 
 /* globals */
@@ -116,7 +115,7 @@ progress_dialog_status_get_type (void)
 /*                       */
 /* progress dialog class */
 /*                       */
-static GtkDialogClass *parent_class = NULL;
+static GtkWindowClass *parent_class = NULL;
 
 GType
 progress_dialog_get_type (void)
@@ -137,7 +136,7 @@ progress_dialog_get_type (void)
       NULL
     };
 
-    type = g_type_register_static (GTK_TYPE_DIALOG, "ProgressDialog", &our_info, 0);
+    type = g_type_register_static (GTK_TYPE_WINDOW, "ProgressDialog", &our_info, 0);
   }
 
   return type;
@@ -173,11 +172,15 @@ static void
 progress_dialog_init (ProgressDialog * obj)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (obj);
-  GtkDialog *dialog = GTK_DIALOG (obj);
-  GtkBox *box = GTK_BOX (dialog->vbox);
-  GtkWidget *hbox;
+  GtkWidget *hbox, *vbox;
+  GCancellable *cancel;
 
   gtk_window_set_default_size (GTK_WINDOW (obj), 500, 75);
+
+  vbox = gtk_vbox_new (FALSE, 0);
+  //gtk_box_pack_end (GTK_BOX (obj), hbox, TRUE, TRUE, 5);
+  gtk_container_add (GTK_CONTAINER (obj), vbox);
+  //gtk_box_reorder_child (box, hbox, 0);
 
   /* label */
   priv->status_label = gtk_label_new ("Initializing ...");
@@ -185,19 +188,13 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_label_set_justify (GTK_LABEL (priv->status_label), GTK_JUSTIFY_LEFT);
   gtk_label_set_selectable (GTK_LABEL (priv->status_label), TRUE);
   gtk_widget_show (priv->status_label);
-  gtk_box_pack_start (box, priv->status_label, FALSE, TRUE, BORDER);
+  gtk_box_pack_start (GTK_BOX (vbox), priv->status_label, FALSE, TRUE, BORDER);
 
   /* progress bar */
   priv->progress_bar = gtk_progress_bar_new ();
   gtk_widget_show (priv->progress_bar);
-  gtk_box_pack_start (box, priv->progress_bar, FALSE, FALSE, BORDER);
+  gtk_box_pack_start (GTK_BOX (vbox), priv->progress_bar, FALSE, FALSE, BORDER);
   gtk_progress_bar_set_pulse_step (GTK_PROGRESS_BAR (priv->progress_bar), 0.05);
-
-  /* adjust the action_box, since we'll not just use it for buttons */
-  gtk_container_remove (GTK_CONTAINER (box), dialog->action_area);
-  dialog->action_area = hbox = gtk_hbox_new (FALSE, 0);
-  gtk_box_pack_end (box, hbox, TRUE, TRUE, 0);
-  gtk_box_reorder_child (box, hbox, 0);
 
   /* file label */
   
@@ -205,25 +202,39 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_misc_set_alignment (GTK_MISC (priv->file_label), 0.1, 0.0);
   gtk_label_set_justify (GTK_LABEL (priv->file_label), GTK_JUSTIFY_LEFT);
   gtk_label_set_selectable (GTK_LABEL (priv->file_label), TRUE);
-  gtk_widget_show (priv->file_label);
   //gtk_box_pack_start (GTK_BOX (GTK_DIALOG (obj)->action_area), priv->file_label, TRUE, TRUE, BORDER);
-  gtk_box_pack_start (GTK_BOX (hbox), priv->file_label, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), priv->file_label, TRUE, TRUE, 0);
+  gtk_widget_show (priv->file_label);
   gtk_misc_set_alignment (GTK_MISC (priv->file_label), 0.0, 0.0);
+
+  hbox = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
+  gtk_widget_show (hbox);
 
   /* action buttons */
   priv->button_close = gtk_button_new_from_stock (GTK_STOCK_CANCEL);
   gtk_widget_show (priv->button_close);
-  //gtk_dialog_add_action_widget (GTK_DIALOG (obj), priv->button_close, GTK_RESPONSE_CANCEL);
   gtk_box_pack_end (GTK_BOX (hbox), priv->button_close, FALSE, FALSE, 0);
+#if 0
   GTK_WIDGET_SET_FLAGS (priv->button_close, GTK_CAN_DEFAULT);
   gtk_widget_grab_focus (priv->button_close);
   gtk_widget_grab_default (priv->button_close);
+#endif
 
-  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_dialog_delete), obj);
+  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_abort), obj);
 
-  gtk_widget_show (GTK_WIDGET (hbox));
+  gtk_widget_show (GTK_WIDGET (vbox));
   
-  g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_dialog_delete), priv);
+  g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_abort), priv);
+
+
+  cancel = checkcopy_get_cancellable ();
+
+  if (g_cancellable_is_cancelled (cancel)) {
+    cb_cancel (cancel, obj);
+  } else {
+    g_cancellable_connect (cancel, G_CALLBACK (cb_cancel), obj, NULL);
+  }
 }
 
 static void
@@ -381,41 +392,60 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 }
 
 /* callbacks */
-/*
-static void
-cb_button_close_clicked (GtkWidget *button, ProgressDialog *dialog)
-{
-  gtk_widget_destroy (GTK_WIDGET (dialog));
-}
-*/
 
 static gboolean
-cb_dialog_delete (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv)
+cb_abort (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv)
 {
-  /*
-  if (!GTK_WIDGET_SENSITIVE (priv->button_close)) {
-    gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-    return TRUE;
+  GCancellable *cancel;
+
+  cancel = checkcopy_get_cancellable ();
+
+  if (g_cancellable_is_cancelled (cancel)) {
+    gtk_main_quit ();
   } else {
-    gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CLOSE);
-    return FALSE;
+    g_cancellable_cancel (cancel);
   }
-  */
-  gtk_main_quit ();
+
   return FALSE;
 }
 
 static void
-progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
+cb_cancel (GCancellable *cancel, ProgressDialog * dialog)
 {
-  progress_dialog_set_status (dialog, status);
-  set_action_text (dialog, status, text);
+  //ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  DBG ("Cancelled....");
+
+
+  progress_dialog_set_status_with_text (dialog, PROGRESS_DIALOG_STATUS_CANCELLED, "Cancelled");
 }
 
-static void
+
+/* public */
+
+static gboolean
+progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
+{
+  gboolean ret;
+
+  ret = progress_dialog_set_status (dialog, status);
+  if (ret) {
+    set_action_text (dialog, status, text);
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
+static gboolean
 progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  if (priv->status == PROGRESS_DIALOG_STATUS_CANCELLED) {
+    /* cancelled is a trapped state, normally we don't exit */
+    return FALSE;
+  }
 
   priv->status = status;
 
@@ -428,7 +458,6 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
     if (status == PROGRESS_DIALOG_STATUS_COPYING) {
       set_action_text (dialog, status, "Copying....");
     }
-    gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
 
   if (status == PROGRESS_DIALOG_STATUS_COMPLETED) {
@@ -438,7 +467,23 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
     progress_dialog_add_size (dialog, 0);
 
     progress_dialog_set_filename (dialog, "");
+    gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
+  } else if (status == PROGRESS_DIALOG_STATUS_CANCELLED) {
+    gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
+
+  return TRUE;
+}
+
+void
+progress_dialog_thread_set_done (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+  
+  /* reset the status to force moving it to complete */
+  priv->status = PROGRESS_DIALOG_STATUS_COPYING;
+
+  progress_dialog_set_status (dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
 }
 
 /*        */
@@ -466,20 +511,28 @@ progress_dialog_thread_add_size (ProgressDialog * dialog, guint64 size)
   gdk_threads_leave ();
 }
 
-void
+gboolean
 progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus status)
 {
+  gboolean ret;
+
   gdk_threads_enter ();
-  progress_dialog_set_status (dialog, status);
+  ret = progress_dialog_set_status (dialog, status);
   gdk_threads_leave ();
+
+  return ret;
 }
 
-void
+gboolean
 progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
 {
+  gboolean ret;
+
   gdk_threads_enter ();
-  progress_dialog_set_status_with_text (dialog, status, text);
+  ret = progress_dialog_set_status_with_text (dialog, status, text);
   gdk_threads_leave ();
+
+  return ret;
 }
 
 void 

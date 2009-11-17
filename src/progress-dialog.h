@@ -67,10 +67,11 @@ void progress_dialog_pulse_progress_bar (ProgressDialog * dialog);
 gdouble progress_dialog_get_progress_bar_fraction (ProgressDialog * dialog);
 
 void progress_dialog_thread_add_size (ProgressDialog * dialog, guint64 size);
-void progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
-void progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
+gboolean progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
+gboolean progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
 void progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn);
 guint64 progress_dialog_thread_get_current_size (ProgressDialog * dialog);
+void progress_dialog_thread_set_done (ProgressDialog * dialog);
 
 ProgressDialog * progress_dialog_new ();
 
