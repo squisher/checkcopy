@@ -28,6 +28,7 @@
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
 #include "checkcopy-file-info.h"
+#include "checkcopy-file-list.h"
 #include "checkcopy-cancel.h"
 #include "checkcopy-input-stream.h"
 
@@ -62,6 +63,7 @@ typedef struct _CheckcopyProcessorPrivate CheckcopyProcessorPrivate;
 struct _CheckcopyProcessorPrivate {
   GFile *dest;
   ProgressDialog * progress_dialog;
+  CheckcopyFileList * list;
 };
 
 static void
@@ -127,6 +129,9 @@ checkcopy_processor_file_handler_init (CheckcopyFileHandlerInterface *iface, gpo
 static void
 checkcopy_processor_init (CheckcopyProcessor *self)
 {
+  CheckcopyProcessorPrivate * priv = GET_PRIVATE (self);
+
+  priv->list = checkcopy_file_list_get_instance ();
 }
 
 static void
@@ -137,6 +142,7 @@ checkcopy_processor_finalize (GObject *obj)
 
   g_object_unref (priv->dest);
   g_object_unref (priv->progress_dialog);
+  g_object_unref (priv->list);
 }
 
 
@@ -292,7 +298,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     } else {
       /* created input stream successfully */
 
-      checksum_type = checkcopy_file_info_get_type (relname);
+      checksum_type = checkcopy_file_list_get_file_type (priv->list, relname);
       if (checksum_type == CHECKCOPY_NO_CHECKSUM)
         checksum_type = CHECKCOPY_SHA1;
 
@@ -310,7 +316,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
         checksum = checkcopy_input_stream_get_checksum (cin);
 
-        checkcopy_file_info_check_file (relname, checksum, checksum_type);
+        checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
 
         g_object_unref (out);
       }

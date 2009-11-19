@@ -26,6 +26,7 @@
 #include "checkcopy-planner.h"
 #include "checkcopy-file-handler.h"
 #include "checkcopy-file-info.h"
+#include "checkcopy-file-list.h"
 
 
 /*- private prototypes -*/
@@ -59,6 +60,7 @@ typedef struct _CheckcopyPlannerPrivate CheckcopyPlannerPrivate;
 struct _CheckcopyPlannerPrivate {
   goffset size;
   ProgressDialog * progress_dialog;
+  CheckcopyFileList * list;
 };
 
 static void
@@ -124,6 +126,9 @@ checkcopy_planner_file_handler_init (CheckcopyFileHandlerInterface *iface, gpoin
 static void
 checkcopy_planner_init (CheckcopyPlanner *self)
 {
+  CheckcopyPlannerPrivate *priv = GET_PRIVATE(self);
+
+  priv->list = checkcopy_file_list_get_instance ();
 }
 
 static void
@@ -133,6 +138,7 @@ checkcopy_planner_finalize (GObject *obj)
   CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
 
   g_object_unref (priv->progress_dialog);
+  g_object_unref (priv->list);
 }
 
 
@@ -156,7 +162,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
 
   if ((checksum_type = checkcopy_file_info_get_checksum_type (file)) != CHECKCOPY_NO_CHECKSUM) {
-    checksum_file_info_parse_checksum_file (root, file, checksum_type);
+    checksum_file_list_parse_checksum_file (priv->list, root, file, checksum_type);
   }
 }
 

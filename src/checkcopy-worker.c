@@ -27,6 +27,7 @@
 #include "checkcopy-planner.h"
 #include "checkcopy-processor.h"
 #include "checkcopy-file-info.h"
+#include "checkcopy-file-list.h"
 
 void
 checkcopy_worker (CheckcopyWorkerParams * params)
@@ -37,8 +38,9 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   ProgressDialog * progress_dialog;
   CheckcopyPlanner *planner;
   CheckcopyProcessor *proc;
+  CheckcopyFileList * list;
 
-  checkcopy_file_info_init ();
+  list = checkcopy_file_list_get_instance ();
 
   progress_dialog = params->progress_dialog;
   planner = checkcopy_planner_new (progress_dialog);
@@ -104,8 +106,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 
   g_object_unref (planner);
   g_object_unref (proc);
-
-  checkcopy_file_info_free ();
+  g_object_unref (list);
 
   g_free (params);
 }

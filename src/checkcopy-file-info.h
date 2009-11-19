@@ -46,13 +46,8 @@ typedef struct {
 } CheckcopyFileInfo;
 
 
-void checkcopy_file_info_init (void);
-void checkcopy_file_info_free (void);
-
+void checkcopy_file_info_free (CheckcopyFileInfo *info);
 CheckcopyChecksumType checkcopy_file_info_get_checksum_type (GFile *file);
-void checksum_file_info_parse_checksum_file (GFile *root, GFile *file, CheckcopyChecksumType checksum_type);
-CheckcopyFileStatus checkcopy_file_info_check_file (gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
-CheckcopyChecksumType checkcopy_file_info_get_type (gchar *relname);
 GChecksumType checkcopy_checksum_type_to_gio (CheckcopyChecksumType type);
 
 G_END_DECLS
