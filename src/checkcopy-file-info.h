@@ -49,6 +49,8 @@ typedef struct {
 void checkcopy_file_info_free (CheckcopyFileInfo *info);
 CheckcopyChecksumType checkcopy_file_info_get_checksum_type (GFile *file);
 GChecksumType checkcopy_checksum_type_to_gio (CheckcopyChecksumType type);
+gssize checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** line);
+gint checkcopy_file_info_cmp (CheckcopyFileInfo *infoa, CheckcopyFileInfo *infob);
 
 G_END_DECLS
 

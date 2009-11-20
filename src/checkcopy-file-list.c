@@ -31,10 +31,12 @@
 
 /*- private prototypes -*/
 
-static GObject *
-checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectConstructParam * construct_params);
+static GObject * checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectConstructParam * construct_params);
+static GOutputStream * get_checksum_stream (CheckcopyFileList * list, GFile * dest);
 
 /*- globals -*/
+
+#define MAX_CHECKSUM_FILE_RETRIES 10000
 
 enum {
   PROP_0,
@@ -59,6 +61,10 @@ typedef struct _CheckcopyFileListPrivate CheckcopyFileListPrivate;
 
 struct _CheckcopyFileListPrivate {
   GHashTable *files_hash;
+  GFile * checksum_file;
+
+  /* statistics */
+
 };
 
 static void
@@ -212,6 +218,8 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
         info->checksum_type = checksum_type;
         info->status = CHECKCOPY_STATUS_VERIFIABLE;
 
+        DBG ("Parsed checksum for %s", info->relname);
+
         g_hash_table_insert (priv->files_hash, info->relname, info);
       } else {
         /* We already have a checksum for this file. This is a bit odd.
@@ -253,7 +261,7 @@ checkcopy_file_list_get_file_type (CheckcopyFileList * list, gchar *relname)
 }
 
 CheckcopyFileStatus
-checkcopy_file_list_check_file (CheckcopyFileList * list,gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type)
+checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
   CheckcopyFileInfo *info;
@@ -268,7 +276,7 @@ checkcopy_file_list_check_file (CheckcopyFileList * list,gchar *relname, const g
 
     info = g_new0 (CheckcopyFileInfo, 1);
 
-    info->relname = relname;
+    info->relname = g_strdup (relname);
     info->checksum = g_strdup (checksum);
     info->checksum_type = checksum_type;
     info->status = CHECKCOPY_STATUS_COPIED;
@@ -292,6 +300,139 @@ checkcopy_file_list_check_file (CheckcopyFileList * list,gchar *relname, const g
   }
 
   return info->status;
+}
+
+static GOutputStream * 
+get_checksum_stream (CheckcopyFileList * list, GFile * dest)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  gchar * basename;
+  gchar * checksum_name;
+  GFileOutputStream * out;
+  GError *error = NULL;
+  GCancellable * cancel;
+  GFile *checksum = NULL;
+  gint i;
+  gchar *ext = "CHECKSUM";
+
+  cancel = checkcopy_get_cancellable ();
+  basename = g_file_get_basename (dest);
+
+  i = 0;
+  do {
+    DBG ("Try %d to generate a checksum file name", i);
+    if (checksum) {
+      g_object_unref (checksum);
+      checksum = NULL;
+    }
+
+    if (error) {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+        /* There was an error, but it was not that the file already exists.
+         * We should abort at this point. */
+
+        g_error_free (error);
+        error = NULL;
+        break;
+      } else {
+        /* continue with next iteration */
+
+        g_error_free (error);
+        error = NULL;
+
+        if (i > MAX_CHECKSUM_FILE_RETRIES)
+          break;
+      }
+    }
+
+    if (basename == NULL) {
+      checksum_name = g_strdup (ext);
+    } else {
+      if (i==0)
+        checksum_name = g_strconcat (basename, ".", ext, NULL);
+      else
+        checksum_name = g_strdup_printf ("%s-%d.%s", basename, i, ext);
+    }
+
+    checksum = g_file_resolve_relative_path (dest, checksum_name);
+    i++;
+
+  } while ((out = g_file_create (checksum, 0, cancel, &error)) == NULL);
+
+  g_free (basename);
+
+  if (out) {
+    priv->checksum_file = checksum;
+
+    return G_OUTPUT_STREAM (out);
+  } else {
+    g_object_unref (checksum);
+
+    return NULL;
+  }
+}
+
+gboolean
+checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  GOutputStream * out;
+  GCancellable * cancel;
+  GError *error = NULL;
+
+  cancel = checkcopy_get_cancellable ();
+
+  out = get_checksum_stream (list, dest);
+
+  if (out) {
+    /* Write the file */
+    GList * file_list;
+    GList * curr_file;
+
+    file_list = g_hash_table_get_values (priv->files_hash);
+
+    file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
+
+    for (curr_file = file_list; curr_file != NULL; curr_file = g_list_next (curr_file)) {
+      CheckcopyFileInfo * info = (CheckcopyFileInfo *) curr_file->data;
+      gchar * line;
+      gint n;
+      gsize n_written;
+      gboolean r;
+
+      if (!(info->status==CHECKCOPY_STATUS_COPIED || info->status==CHECKCOPY_STATUS_VERIFICATION_FAILED)) {
+
+        continue;
+      }
+
+      n = checkcopy_file_info_format_checksum (info, &line);
+
+      r = g_output_stream_write_all (out, line, n, &n_written, cancel, &error);
+
+      if (!r || n != n_written) {
+        gchar * disp_name;
+
+        disp_name = g_file_get_uri (priv->checksum_file);
+
+        if (error) {
+          g_critical ("While writing checksum file %s: %s", disp_name, error->message);
+
+          g_error_free (error);
+        } else {
+          g_critical ("Only wrote %u of %d bytes of checksum file %s", n_written, n, disp_name);
+        }
+        g_free (disp_name);
+      }
+
+      g_free (line);
+    }
+
+    g_list_free (file_list);
+  }
+
+  return out != NULL;
 }
 
 CheckcopyFileList*

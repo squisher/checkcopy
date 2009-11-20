@@ -75,8 +75,10 @@ static void progress_dialog_get_property (GObject * object, guint prop_id, GValu
 static void progress_dialog_set_property (GObject * object, guint prop_id, const GValue * value,
                                                  GParamSpec * pspec);
 
-static gboolean cb_abort (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv);
+void cb_clicked (GtkButton * button, ProgressDialog * dialog);
 static void cb_cancel (GCancellable *cancel, ProgressDialog * dialog);
+static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data);
+
 static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
 static gboolean progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
 static gboolean progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
@@ -221,11 +223,11 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_grab_default (priv->button_close);
 #endif
 
-  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_abort), obj);
+  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_clicked), obj);
 
   gtk_widget_show (GTK_WIDGET (vbox));
   
-  g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_abort), priv);
+  g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_delete), NULL);
 
 
   cancel = checkcopy_get_cancellable ();
@@ -393,18 +395,27 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 
 /* callbacks */
 
-static gboolean
-cb_abort (ProgressDialog * dialog, GdkEvent * event, ProgressDialogPrivate * priv)
+void
+cb_clicked (GtkButton * button, ProgressDialog * dialog)
 {
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
   GCancellable *cancel;
 
   cancel = checkcopy_get_cancellable ();
 
-  if (g_cancellable_is_cancelled (cancel)) {
+  if (g_strcmp0 (gtk_button_get_label (GTK_BUTTON (priv->button_close)), GTK_STOCK_CLOSE) == 0 || g_cancellable_is_cancelled (cancel)) {
     gtk_main_quit ();
   } else {
     g_cancellable_cancel (cancel);
   }
+}
+
+static gboolean
+cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  cb_clicked (GTK_BUTTON (priv->button_close), dialog);
 
   return FALSE;
 }

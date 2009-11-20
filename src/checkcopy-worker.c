@@ -45,7 +45,6 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   progress_dialog = params->progress_dialog;
   planner = checkcopy_planner_new (progress_dialog);
   proc = checkcopy_processor_new (progress_dialog, params->dest);
-  g_object_unref (params->dest);
 
   int_q = g_queue_new ();
 
@@ -92,6 +91,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
       g_object_unref (file);
     }
 
+    checkcopy_file_list_write_checksum (list, params->dest);
     progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
 
     DBG ("Waiting for more things to do");
@@ -108,5 +108,6 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   g_object_unref (proc);
   g_object_unref (list);
 
+  g_object_unref (params->dest);
   g_free (params);
 }

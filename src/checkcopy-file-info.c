@@ -40,6 +40,39 @@ static gchar * checksum_type_extensions [] = {
 
 
 /* public functions */
+gssize
+checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** line)
+{
+  gssize len;
+  GString * string;
+
+  g_assert (line != NULL);
+  
+  if (!info->relname || !info->checksum) {
+    *line = NULL;
+    return 0;
+  }
+
+  string = g_string_new ("");
+
+  g_string_printf (string, "%s  %s\n", info->checksum, info->relname);
+
+  *line = string->str;
+  len = string->len;
+
+  g_string_free (string, FALSE);
+
+  return len; 
+}
+
+gint
+checkcopy_file_info_cmp (CheckcopyFileInfo *infoa, CheckcopyFileInfo *infob)
+{
+  g_assert (infoa != NULL);
+  g_assert (infob != NULL);
+
+  return g_strcmp0 (infoa->relname, infob->relname);
+}
 
 void
 checkcopy_file_info_free (CheckcopyFileInfo *info)
