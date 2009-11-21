@@ -435,6 +435,14 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
   return out != NULL;
 }
 
+GList *
+checkcopy_file_list_get_list (CheckcopyFileList * list)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  return g_hash_table_get_values (priv->files_hash);
+}
+
 CheckcopyFileList*
 checkcopy_file_list_get_instance (void)
 {

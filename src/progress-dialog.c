@@ -36,6 +36,7 @@
 
 #include "progress-dialog.h"
 #include "checkcopy-cancel.h"
+#include "checkcopy-file-list.h"
 #include "checkcopy-details-window.h"
 
 #define BORDER 10
@@ -428,6 +429,15 @@ static void
 cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  CheckcopyFileList * list;
+
+  list = checkcopy_file_list_get_instance ();
+
+  g_object_set (G_OBJECT (priv->details), "file-info-list",
+                checkcopy_file_list_get_list (list), NULL);
+
+  g_object_unref (list);
 
   gtk_widget_show (GTK_WIDGET (priv->details));
 }

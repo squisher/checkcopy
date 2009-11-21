@@ -36,6 +36,15 @@ static gchar * checksum_type_extensions [] = {
 }; // same order as CheckscopyChecksumType
 
 
+static gchar * status_text [] = {
+  "none",
+  "has checksum, but not found",
+  "verified",
+  "FAILED",
+  "Ok",
+}; // same order as CheckcopyFileStatus
+
+
 /* internals */
 
 
@@ -121,4 +130,12 @@ checkcopy_checksum_type_to_gio (CheckcopyChecksumType type)
 
   g_error ("No CheckcopyChecksumType matched, error");
   return -1;
+}
+
+const gchar *
+checkcopy_file_info_status_text (CheckcopyFileInfo *info)
+{
+  g_assert (info != NULL);
+
+  return status_text[info->status];
 }

@@ -58,6 +58,7 @@ gint checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *ro
 CheckcopyChecksumType checkcopy_file_list_get_file_type (CheckcopyFileList * list, gchar *relname);
 CheckcopyFileStatus checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
 gboolean checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest);
+GList * checkcopy_file_list_get_list (CheckcopyFileList * list);
 
 CheckcopyFileList* checkcopy_file_list_get_instance (void);
 
