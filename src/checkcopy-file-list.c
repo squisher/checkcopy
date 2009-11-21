@@ -391,9 +391,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
     GList * file_list;
     GList * curr_file;
 
-    file_list = g_hash_table_get_values (priv->files_hash);
-
-    file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
+    file_list = checkcopy_file_list_get_sorted_list (list);
 
     for (curr_file = file_list; curr_file != NULL; curr_file = g_list_next (curr_file)) {
       CheckcopyFileInfo * info = (CheckcopyFileInfo *) curr_file->data;
@@ -436,11 +434,17 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
 }
 
 GList *
-checkcopy_file_list_get_list (CheckcopyFileList * list)
+checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
 
-  return g_hash_table_get_values (priv->files_hash);
+  GList * file_list;
+
+  file_list = g_hash_table_get_values (priv->files_hash);
+
+  file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
+
+  return file_list;
 }
 
 CheckcopyFileList*

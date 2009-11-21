@@ -435,7 +435,7 @@ cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
   list = checkcopy_file_list_get_instance ();
 
   g_object_set (G_OBJECT (priv->details), "file-info-list",
-                checkcopy_file_list_get_list (list), NULL);
+                checkcopy_file_list_get_sorted_list (list), NULL);
 
   g_object_unref (list);
 
