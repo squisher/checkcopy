@@ -36,6 +36,7 @@
 
 #include "progress-dialog.h"
 #include "checkcopy-cancel.h"
+#include "checkcopy-details-window.h"
 
 #define BORDER 10
 #define BUF_SIZE 8192
@@ -52,6 +53,9 @@ typedef struct
   GtkWidget *status_label;
   GtkWidget *file_label;
   GtkWidget *button_close;
+  GtkWidget *button_details;
+
+  CheckcopyDetailsWindow *details;
 
   guint64 total_size;
   guint64 curr_size;
@@ -75,7 +79,8 @@ static void progress_dialog_get_property (GObject * object, guint prop_id, GValu
 static void progress_dialog_set_property (GObject * object, guint prop_id, const GValue * value,
                                                  GParamSpec * pspec);
 
-void cb_clicked (GtkButton * button, ProgressDialog * dialog);
+static void cb_close_clicked (GtkButton * button, ProgressDialog * dialog);
+static void cb_details_clicked (GtkButton * button, ProgressDialog * dialog);
 static void cb_cancel (GCancellable *cancel, ProgressDialog * dialog);
 static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data);
 
@@ -214,6 +219,13 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_show (hbox);
 
   /* action buttons */
+  priv->button_details = gtk_button_new_with_label ("Details");
+  gtk_widget_show (priv->button_details);
+  gtk_box_pack_start (GTK_BOX (hbox), priv->button_details, FALSE, FALSE, 0);
+
+  g_signal_connect (G_OBJECT (priv->button_details), "clicked", G_CALLBACK (cb_details_clicked), obj);
+
+
   priv->button_close = gtk_button_new_from_stock (GTK_STOCK_CANCEL);
   gtk_widget_show (priv->button_close);
   gtk_box_pack_end (GTK_BOX (hbox), priv->button_close, FALSE, FALSE, 0);
@@ -223,12 +235,14 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_grab_default (priv->button_close);
 #endif
 
-  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_clicked), obj);
+  g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_close_clicked), obj);
 
   gtk_widget_show (GTK_WIDGET (vbox));
   
+
   g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_delete), NULL);
 
+  priv->details = checkcopy_details_window_new ();
 
   cancel = checkcopy_get_cancellable ();
 
@@ -395,8 +409,8 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 
 /* callbacks */
 
-void
-cb_clicked (GtkButton * button, ProgressDialog * dialog)
+static void
+cb_close_clicked (GtkButton * button, ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
   GCancellable *cancel;
@@ -410,12 +424,20 @@ cb_clicked (GtkButton * button, ProgressDialog * dialog)
   }
 }
 
+static void
+cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  gtk_widget_show (GTK_WIDGET (priv->details));
+}
+
 static gboolean
 cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-  cb_clicked (GTK_BUTTON (priv->button_close), dialog);
+  cb_close_clicked (GTK_BUTTON (priv->button_close), dialog);
 
   return FALSE;
 }
@@ -572,7 +594,7 @@ ProgressDialog *
 progress_dialog_new (void)
 {
   ProgressDialog *obj;
-  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "modal", TRUE, NULL));
+  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, NULL));
     
   return obj;
 }

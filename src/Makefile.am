@@ -14,6 +14,7 @@ checkcopy_headers = 				\
 	checkcopy-worker.h			\
 	checkcopy-file-info.h			\
 	checkcopy-file-list.h			\
+	checkcopy-details-window.h		\
 	checkcopy-traversal.h
 
 checkcopy_SOURCES = 				\
@@ -29,6 +30,7 @@ checkcopy_SOURCES = 				\
 	checkcopy-worker.c			\
 	checkcopy-file-info.c			\
 	checkcopy-file-list.c			\
+	checkcopy-details-window.c		\
 	checkcopy-traversal.c
 
 checkcopy_CFLAGS = 				\
