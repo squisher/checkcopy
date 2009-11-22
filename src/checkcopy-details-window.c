@@ -31,6 +31,8 @@
 /*- private prototypes -*/
 
 static void display_list (CheckcopyDetailsWindow * details, GList *file_infos);
+static void status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data);
+
 static gboolean cb_delete (CheckcopyDetailsWindow * details, GdkEvent * event, gpointer data);
 static void cb_close_clicked (GtkButton * button, CheckcopyDetailsWindow *details);
 
@@ -133,7 +135,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   GtkTreeView *view;
 
   gtk_window_set_title (GTK_WINDOW (self), "Details");
-  gtk_window_set_default_size (GTK_WINDOW (self), 400, 300);
+  gtk_window_set_default_size (GTK_WINDOW (self), 400, 500);
 
   /* basic layout */
 
@@ -160,7 +162,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   gtk_widget_show (button_close);
 
   /* list store */
-  priv->store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+  priv->store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
 
   /* tree view */
   priv->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (priv->store));
@@ -175,7 +177,9 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   column = gtk_tree_view_column_new_with_attributes ("Hash", renderer, "text", COLUMN_HASH, NULL);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
+  renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes ("Status", renderer, "text", COLUMN_STATUS, NULL);
+  gtk_tree_view_column_set_cell_data_func (column, renderer, status_to_string, self, NULL);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
   scrolled = gtk_scrolled_window_new (NULL, NULL);
@@ -212,8 +216,38 @@ display_list (CheckcopyDetailsWindow * details, GList *file_infos)
     gtk_list_store_set (priv->store, &iter,
                         COLUMN_RELNAME, info->relname,
                         COLUMN_HASH, info->checksum,
-                        COLUMN_STATUS, checkcopy_file_info_status_text (info),
+                        COLUMN_STATUS, info->status,
                         -1);
+  }
+}
+
+static void
+status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
+{
+  //CheckcopyDetailsWindow * details = CHECKCOPY_DETAILS_WINDOW (data);
+
+  CheckcopyFileStatus status;
+  gchar *color = NULL;
+
+  gtk_tree_model_get (model, iter, COLUMN_STATUS, &status, -1);
+
+  g_object_set (G_OBJECT (renderer), "text", checkcopy_file_status_to_string (status), NULL);
+  
+  switch (status) {
+    case CHECKCOPY_STATUS_VERIFICATION_FAILED:
+      color = "#ee2211";
+      break;
+    case CHECKCOPY_STATUS_VERIFIED:
+      color = "#11ee22";
+      break;
+    default:
+      break;
+  }
+
+  if (color) {
+    g_object_set (G_OBJECT (renderer), "background", color, "background-set", TRUE, NULL);
+  } else {
+    g_object_set (G_OBJECT (renderer), "background-set", FALSE, NULL);
   }
 }
 

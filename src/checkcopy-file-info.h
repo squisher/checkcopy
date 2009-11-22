@@ -51,6 +51,7 @@ CheckcopyChecksumType checkcopy_file_info_get_checksum_type (GFile *file);
 GChecksumType checkcopy_checksum_type_to_gio (CheckcopyChecksumType type);
 gssize checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** line);
 gint checkcopy_file_info_cmp (CheckcopyFileInfo *infoa, CheckcopyFileInfo *infob);
+const gchar * checkcopy_file_status_to_string (CheckcopyFileStatus status);
 const gchar * checkcopy_file_info_status_text (CheckcopyFileInfo *info);
 
 G_END_DECLS
