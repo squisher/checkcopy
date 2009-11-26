@@ -67,6 +67,11 @@ typedef struct
   GTimeVal tv_start;
   GTimeVal tv_end;
 
+  guint idle_tag;
+#ifdef DEBUG
+  guint upd_cnt;
+#endif
+
   ProgressDialogStatus status;
 } ProgressDialogPrivate;
 
@@ -84,7 +89,10 @@ static void cb_close_clicked (GtkButton * button, ProgressDialog * dialog);
 static void cb_details_clicked (GtkButton * button, ProgressDialog * dialog);
 static void cb_cancel (GCancellable *cancel, ProgressDialog * dialog);
 static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data);
+static gboolean cb_update_progress (gpointer data);
+static void set_update (ProgressDialog * dialog, gboolean enabled);
 
+static void update_progress (ProgressDialog * dialog);
 static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
 static gboolean progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
 static gboolean progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text);
@@ -337,11 +345,17 @@ static void
 progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  priv->curr_size += size;
+}
+
+static void
+update_progress (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
   gint cur_permil = 0;
   gint permil = 0;
   gchar *text = NULL;
-
-  priv->curr_size += size;
 
   cur_permil = (gint) (gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (priv->progress_bar)) * 1000.0);
   permil = (gint) ((gdouble) priv->curr_size / (gdouble) priv->total_size * 1000.0);
@@ -367,6 +381,9 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
       break;
     case PROGRESS_DIALOG_STATUS_COMPLETED:
       text = g_strdup (_("Completed"));
+#ifdef DEBUG
+      DBG ("%d updates to the progress bar", priv->upd_cnt);
+#endif
       break;
     }
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), permil / 1000.0);
@@ -376,10 +393,14 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
     text = g_strdup ("0%");
     g_warning ("Negative progress");
   }
-  // FIXME: improve the fraction >= cur_fraction check, which will pretty much always succeed because it's a double
   else if (priv->status == PROGRESS_DIALOG_STATUS_COPYING && permil >= cur_permil) {
+    GtkProgressBar *pbar = GTK_PROGRESS_BAR (priv->progress_bar);
     text = g_strdup_printf ("%d%%  ", permil / 10);
-    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), (gdouble) permil / 1000.0);
+    gtk_progress_bar_set_fraction (pbar, (gdouble) permil / 1000.0);
+
+#ifdef DEBUG
+    priv->upd_cnt++;
+#endif
   }
   else if (permil < cur_permil) {
     return;
@@ -463,8 +484,42 @@ cb_cancel (GCancellable *cancel, ProgressDialog * dialog)
   progress_dialog_set_status_with_text (dialog, PROGRESS_DIALOG_STATUS_CANCELLED, "Cancelled");
 }
 
+static gboolean
+cb_update_progress (gpointer data)
+{
+  ProgressDialog * dialog = PROGRESS_DIALOG (data);
+  //ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-/* public */
+  //DBG ("Updating progress");
+
+  update_progress (dialog);
+
+  return TRUE;
+}
+
+static void
+set_update (ProgressDialog * dialog, gboolean enabled)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  if (enabled) {
+    priv->idle_tag = g_idle_add (cb_update_progress, dialog);
+  } else {
+    /* disable */
+
+    gboolean r;
+
+    g_assert (priv->idle_tag != 0);
+
+    r = g_source_remove (priv->idle_tag);
+
+    if (!r) {
+      g_warning ("Unable to remove update idle function");
+    }
+
+    priv->idle_tag = 0;
+  }
+}
 
 static gboolean
 progress_dialog_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
@@ -500,6 +555,7 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
 
     if (status == PROGRESS_DIALOG_STATUS_COPYING) {
       set_action_text (dialog, status, "Copying....");
+      set_update (dialog, TRUE);
     }
   }
 
@@ -511,22 +567,12 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
 
     progress_dialog_set_filename (dialog, "");
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
+    set_update (dialog, FALSE);
   } else if (status == PROGRESS_DIALOG_STATUS_CANCELLED) {
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
 
   return TRUE;
-}
-
-void
-progress_dialog_thread_set_done (ProgressDialog * dialog)
-{
-  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-  
-  /* reset the status to force moving it to complete */
-  priv->status = PROGRESS_DIALOG_STATUS_COPYING;
-
-  progress_dialog_set_status (dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
 }
 
 /*        */
@@ -597,6 +643,19 @@ progress_dialog_thread_get_current_size (ProgressDialog * dialog)
   gdk_threads_leave ();
 
   return ret;
+}
+
+void
+progress_dialog_thread_set_done (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+  
+  /* reset the status to force moving it to complete */
+  priv->status = PROGRESS_DIALOG_STATUS_COPYING;
+
+  gdk_threads_enter ();
+  progress_dialog_set_status (dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
+  gdk_threads_leave ();
 }
 
 /* constructor */
