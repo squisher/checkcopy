@@ -135,7 +135,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   GtkTreeView *view;
 
   gtk_window_set_title (GTK_WINDOW (self), "Details");
-  gtk_window_set_default_size (GTK_WINDOW (self), 400, 500);
+  gtk_window_set_default_size (GTK_WINDOW (self), 600, 500);
 
   /* basic layout */
 
@@ -169,6 +169,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   view = GTK_TREE_VIEW (priv->view);
   gtk_tree_view_set_headers_clickable (view, TRUE);
   gtk_tree_view_set_search_column (view, COLUMN_RELNAME);
+  gtk_tree_view_set_enable_search (view, TRUE);
   renderer = gtk_cell_renderer_text_new ();
 
   column = gtk_tree_view_column_new_with_attributes ("Filename", renderer, "text", COLUMN_RELNAME, NULL);
