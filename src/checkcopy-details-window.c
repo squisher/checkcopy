@@ -31,7 +31,9 @@
 /*- private prototypes -*/
 
 static void display_list (CheckcopyDetailsWindow * details, GList *file_infos);
-static void status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data);
+static void set_color (GtkCellRenderer *renderer, CheckcopyFileStatus status);
+static void cell_status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data);
+static void cell_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data);
 
 static gboolean cb_delete (CheckcopyDetailsWindow * details, GdkEvent * event, gpointer data);
 static void cb_close_clicked (GtkButton * button, CheckcopyDetailsWindow *details);
@@ -173,14 +175,16 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   renderer = gtk_cell_renderer_text_new ();
 
   column = gtk_tree_view_column_new_with_attributes ("Filename", renderer, "text", COLUMN_RELNAME, NULL);
+  gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_RELNAME), NULL);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
   column = gtk_tree_view_column_new_with_attributes ("Hash", renderer, "text", COLUMN_HASH, NULL);
+  gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_HASH), NULL);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
-  renderer = gtk_cell_renderer_text_new ();
+  //renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes ("Status", renderer, "text", COLUMN_STATUS, NULL);
-  gtk_tree_view_column_set_cell_data_func (column, renderer, status_to_string, self, NULL);
+  gtk_tree_view_column_set_cell_data_func (column, renderer, cell_status_to_string, self, NULL);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
   scrolled = gtk_scrolled_window_new (NULL, NULL);
@@ -223,17 +227,10 @@ display_list (CheckcopyDetailsWindow * details, GList *file_infos)
 }
 
 static void
-status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
+set_color (GtkCellRenderer *renderer, CheckcopyFileStatus status)
 {
-  //CheckcopyDetailsWindow * details = CHECKCOPY_DETAILS_WINDOW (data);
-
-  CheckcopyFileStatus status;
   gchar *color = NULL;
 
-  gtk_tree_model_get (model, iter, COLUMN_STATUS, &status, -1);
-
-  g_object_set (G_OBJECT (renderer), "text", checkcopy_file_status_to_string (status), NULL);
-  
   switch (status) {
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
       color = "#ee2211";
@@ -250,6 +247,36 @@ status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeMod
   } else {
     g_object_set (G_OBJECT (renderer), "background-set", FALSE, NULL);
   }
+}
+
+static void
+cell_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
+{
+  CheckcopyFileStatus status;
+  gchar * str;
+  gint coln;
+
+  coln = GPOINTER_TO_INT (data);
+
+  gtk_tree_model_get (model, iter, coln, &str, COLUMN_STATUS, &status, -1);
+
+  g_object_set (G_OBJECT (renderer), "text", str, NULL);
+
+  set_color (renderer, status);
+}
+
+static void
+cell_status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
+{
+  //CheckcopyDetailsWindow * details = CHECKCOPY_DETAILS_WINDOW (data);
+
+  CheckcopyFileStatus status;
+
+  gtk_tree_model_get (model, iter, COLUMN_STATUS, &status, -1);
+
+  g_object_set (G_OBJECT (renderer), "text", checkcopy_file_status_to_string (status), NULL);
+  
+  set_color (renderer, status);
 }
 
 static void
