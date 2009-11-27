@@ -55,8 +55,10 @@ typedef struct
   GtkWidget *file_label;
   GtkWidget *button_close;
   GtkWidget *button_details;
+  GtkWidget *entry_copied, *entry_verified, *entry_failed;
 
   CheckcopyDetailsWindow *details;
+  CheckcopyFileList * list;
 
   guint64 total_size;
   guint64 curr_size;
@@ -68,9 +70,6 @@ typedef struct
   GTimeVal tv_end;
 
   guint idle_tag;
-#ifdef DEBUG
-  guint upd_cnt;
-#endif
 
   ProgressDialogStatus status;
 } ProgressDialogPrivate;
@@ -79,7 +78,8 @@ typedef struct
 /* private prototypes */
 
 static void progress_dialog_class_init (ProgressDialogClass * klass);
-static void progress_dialog_init (ProgressDialog * sp);
+static void progress_dialog_init (ProgressDialog * obj);
+static void progress_dialog_finalize (GObject * obj);
 
 static void progress_dialog_get_property (GObject * object, guint prop_id, GValue * value, GParamSpec * pspec);
 static void progress_dialog_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -92,6 +92,7 @@ static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer d
 static gboolean cb_update_progress (gpointer data);
 static void set_update (ProgressDialog * dialog, gboolean enabled);
 
+static GtkWidget * stats_label_new (void);
 static void update_progress (ProgressDialog * dialog);
 static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
 static gboolean progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
@@ -169,6 +170,7 @@ progress_dialog_class_init (ProgressDialogClass * klass)
   
   object_class->get_property = progress_dialog_get_property;
   object_class->set_property = progress_dialog_set_property;
+  object_class->finalize = progress_dialog_finalize;
 
   /* properties */
   g_object_class_install_property (object_class, PROP_STATUS,
@@ -188,8 +190,13 @@ static void
 progress_dialog_init (ProgressDialog * obj)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (obj);
-  GtkWidget *hbox, *vbox;
+  GtkWidget *hbox, *vbox, *statbox;
   GCancellable *cancel;
+  GtkWidget *label;
+  GtkWidget *align;
+  GtkWidget *sep;
+
+  priv->list = checkcopy_file_list_get_instance ();
 
   gtk_window_set_default_size (GTK_WINDOW (obj), 500, 75);
 
@@ -223,18 +230,60 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_show (priv->file_label);
   gtk_misc_set_alignment (GTK_MISC (priv->file_label), 0.0, 0.0);
 
+  /* lower area */
+
+  sep = gtk_hseparator_new ();
+  gtk_box_pack_start (GTK_BOX (vbox), sep, FALSE, FALSE, 2);
+  gtk_widget_show (sep);
+
   hbox = gtk_hbox_new (FALSE, 0);
   gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
   gtk_widget_show (hbox);
 
-  /* action buttons */
+  /* details button */
   priv->button_details = gtk_button_new_with_label ("Details");
   gtk_widget_show (priv->button_details);
   gtk_box_pack_start (GTK_BOX (hbox), priv->button_details, FALSE, FALSE, 0);
 
   g_signal_connect (G_OBJECT (priv->button_details), "clicked", G_CALLBACK (cb_details_clicked), obj);
 
+  /* stats */
+  align = gtk_alignment_new (0.5, 0.5, 0.0, 0.0);
+  gtk_box_pack_start (GTK_BOX (hbox), align, TRUE, TRUE, 0);
+  gtk_widget_show (align);
 
+  statbox = gtk_hbox_new (FALSE, 0);
+  gtk_container_add (GTK_CONTAINER (align), statbox);
+  gtk_widget_show (statbox);
+
+  label = gtk_label_new ("Copied:");
+  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  priv->entry_copied = label = stats_label_new ();
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  label = gtk_label_new ("Verified:");
+  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  priv->entry_verified = label = stats_label_new ();
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  label = gtk_label_new ("Failed:");
+  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  priv->entry_failed = label = stats_label_new ();
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  /* close button */
   priv->button_close = gtk_button_new_from_stock (GTK_STOCK_CANCEL);
   gtk_widget_show (priv->button_close);
   gtk_box_pack_end (GTK_BOX (hbox), priv->button_close, FALSE, FALSE, 0);
@@ -260,6 +309,17 @@ progress_dialog_init (ProgressDialog * obj)
   } else {
     g_cancellable_connect (cancel, G_CALLBACK (cb_cancel), obj, NULL);
   }
+}
+
+static void
+progress_dialog_finalize (GObject * obj)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (obj);
+
+  g_object_unref (priv->list);
+  g_object_unref (priv->details);
+
+  G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
 static void
@@ -349,6 +409,22 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
   priv->curr_size += size;
 }
 
+static GtkWidget *
+stats_label_new (void)
+{
+  GtkWidget * label;
+
+  label = gtk_entry_new ();
+
+  g_object_set (G_OBJECT (label), "editable", FALSE,
+                                  "width-chars", 5,
+                                  "has-frame", TRUE,
+                                  "shadow-type", GTK_SHADOW_NONE,
+                                  NULL);
+
+  return label;
+}
+
 static void
 update_progress (ProgressDialog * dialog)
 {
@@ -381,9 +457,6 @@ update_progress (ProgressDialog * dialog)
       break;
     case PROGRESS_DIALOG_STATUS_COMPLETED:
       text = g_strdup (_("Completed"));
-#ifdef DEBUG
-      DBG ("%d updates to the progress bar", priv->upd_cnt);
-#endif
       break;
     }
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (priv->progress_bar), permil / 1000.0);
@@ -398,9 +471,6 @@ update_progress (ProgressDialog * dialog)
     text = g_strdup_printf ("%d%%  ", permil / 10);
     gtk_progress_bar_set_fraction (pbar, (gdouble) permil / 1000.0);
 
-#ifdef DEBUG
-    priv->upd_cnt++;
-#endif
   }
   else if (permil < cur_permil) {
     return;
@@ -429,6 +499,30 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
     gtk_label_set_text (GTK_LABEL (priv->file_label), fn);
 }
 
+static void
+update_stat_labels (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  const CheckcopyFileListStats * stats;
+  gchar *s;
+  const gchar fmt[] = "%4d";
+
+  stats = checkcopy_file_list_get_stats (priv->list);
+
+  s = g_strdup_printf (fmt, stats->copied);
+  gtk_entry_set_text (GTK_ENTRY (priv->entry_copied), s);
+  g_free (s);
+
+  s = g_strdup_printf (fmt, stats->verified);
+  gtk_entry_set_text (GTK_ENTRY (priv->entry_verified), s);
+  g_free (s);
+
+  s = g_strdup_printf (fmt, stats->failed);
+  gtk_entry_set_text (GTK_ENTRY (priv->entry_failed), s);
+  g_free (s);
+}
+
 /* callbacks */
 
 static void
@@ -451,14 +545,8 @@ cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-  CheckcopyFileList * list;
-
-  list = checkcopy_file_list_get_instance ();
-
   g_object_set (G_OBJECT (priv->details), "file-info-list",
-                checkcopy_file_list_get_sorted_list (list), NULL);
-
-  g_object_unref (list);
+                checkcopy_file_list_get_sorted_list (priv->list), NULL);
 
   gtk_widget_show (GTK_WIDGET (priv->details));
 }
@@ -494,6 +582,7 @@ cb_update_progress (gpointer data)
   gdk_threads_enter ();
   //DBG ("Updating progress");
   update_progress (dialog);
+  update_stat_labels (dialog);
   gdk_threads_leave ();
 
   return TRUE;
@@ -520,6 +609,10 @@ set_update (ProgressDialog * dialog, gboolean enabled)
     }
 
     priv->idle_tag = 0;
+
+    /* run the update one last time, to ensure all info is up-to-date */
+    update_progress (dialog);
+    update_stat_labels (dialog);
   }
 }
 

@@ -63,8 +63,7 @@ struct _CheckcopyFileListPrivate {
   GHashTable *files_hash;
   GFile * checksum_file;
 
-  /* statistics */
-
+  CheckcopyFileListStats stats;
 };
 
 static void
@@ -355,6 +354,8 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
     info->checksum_type = checksum_type;
     info->status = CHECKCOPY_STATUS_COPIED;
 
+    priv->stats.copied++;
+
     g_hash_table_insert (priv->files_hash, info->relname, info);
   } else {
     /* We have a checksum, verify it and record the result */
@@ -364,6 +365,7 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
       // TODO: update the error list
 
       info->status = CHECKCOPY_STATUS_VERIFICATION_FAILED;
+      priv->stats.failed++;
 
       g_warning ("%s was supposed to have checksum %s, but it had %s", relname, info->checksum, checksum);
     } else {
@@ -371,6 +373,7 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
 
       DBG ("%s matched checksum %s", relname, checksum);
       info->status = CHECKCOPY_STATUS_VERIFIED;
+      priv->stats.verified++;
     }
   }
 
@@ -449,6 +452,14 @@ checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
   file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
 
   return file_list;
+}
+
+const CheckcopyFileListStats *
+checkcopy_file_list_get_stats (CheckcopyFileList * list)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  return &(priv->stats);
 }
 
 CheckcopyFileList*

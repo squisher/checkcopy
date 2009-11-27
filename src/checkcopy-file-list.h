@@ -52,6 +52,12 @@ typedef struct {
   GObjectClass parent_class;
 } CheckcopyFileListClass;
 
+typedef struct {
+  gint copied;
+  gint verified;
+  gint failed;
+} CheckcopyFileListStats;
+
 GType checkcopy_file_list_get_type (void);
 
 gint checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file);
@@ -61,6 +67,7 @@ CheckcopyChecksumType checkcopy_file_list_get_file_type (CheckcopyFileList * lis
 CheckcopyFileStatus checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
 
 GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
+const CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
 
 CheckcopyFileList* checkcopy_file_list_get_instance (void);
 
