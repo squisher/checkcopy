@@ -137,7 +137,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   GtkTreeView *view;
 
   gtk_window_set_title (GTK_WINDOW (self), "Details");
-  gtk_window_set_default_size (GTK_WINDOW (self), 600, 500);
+  gtk_window_set_default_size (GTK_WINDOW (self), 750, 450);
 
   /* basic layout */
 
@@ -169,23 +169,34 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   /* tree view */
   priv->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (priv->store));
   view = GTK_TREE_VIEW (priv->view);
-  gtk_tree_view_set_headers_clickable (view, TRUE);
-  gtk_tree_view_set_search_column (view, COLUMN_RELNAME);
-  gtk_tree_view_set_enable_search (view, TRUE);
   renderer = gtk_cell_renderer_text_new ();
 
   column = gtk_tree_view_column_new_with_attributes ("Filename", renderer, "text", COLUMN_RELNAME, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_RELNAME), NULL);
+  gtk_tree_view_column_set_sort_column_id (column, COLUMN_RELNAME);
+  gtk_tree_view_column_set_sort_indicator (column, TRUE);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
   column = gtk_tree_view_column_new_with_attributes ("Hash", renderer, "text", COLUMN_HASH, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_HASH), NULL);
+  gtk_tree_view_column_set_sort_column_id (column, COLUMN_HASH);
+  gtk_tree_view_column_set_sort_indicator (column, TRUE);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
   //renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes ("Status", renderer, "text", COLUMN_STATUS, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_status_to_string, self, NULL);
+  gtk_tree_view_column_set_sort_column_id (column, COLUMN_STATUS);
+  gtk_tree_view_column_set_sort_indicator (column, TRUE);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
+
+  g_object_set (G_OBJECT (view), "enable-grid-lines", GTK_TREE_VIEW_GRID_LINES_HORIZONTAL, NULL);
+  gtk_tree_view_set_headers_clickable (view, TRUE);
+  gtk_tree_view_set_search_column (view, COLUMN_RELNAME);
+  gtk_tree_view_set_enable_search (view, TRUE);
+
+  gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (priv->store), COLUMN_RELNAME, GTK_SORT_ASCENDING);
+
 
   scrolled = gtk_scrolled_window_new (NULL, NULL);
   gtk_container_add (GTK_CONTAINER (top_frame), scrolled);
