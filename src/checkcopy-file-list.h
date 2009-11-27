@@ -54,10 +54,12 @@ typedef struct {
 
 GType checkcopy_file_list_get_type (void);
 
-gint checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file, CheckcopyChecksumType checksum_type);
+gint checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file);
+gboolean checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest);
+
 CheckcopyChecksumType checkcopy_file_list_get_file_type (CheckcopyFileList * list, gchar *relname);
 CheckcopyFileStatus checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
-gboolean checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest);
+
 GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
 
 CheckcopyFileList* checkcopy_file_list_get_instance (void);

@@ -152,8 +152,6 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   CheckcopyPlanner *planner = CHECKCOPY_PLANNER (fhandler);
   CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
 
-  CheckcopyChecksumType checksum_type;
-
   priv->size += g_file_info_get_size (info);
 
   DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
@@ -161,8 +159,8 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   g_object_set (priv->progress_dialog, "total-size", priv->size, NULL);
 
 
-  if ((checksum_type = checkcopy_file_info_get_checksum_type (file)) != CHECKCOPY_NO_CHECKSUM) {
-    checksum_file_list_parse_checksum_file (priv->list, root, file, checksum_type);
+  if (checkcopy_file_info_is_checksum_file (file)) {
+    checksum_file_list_parse_checksum_file (priv->list, root, file);
   }
 }
 

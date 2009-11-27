@@ -138,12 +138,83 @@ checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectCo
 /*- internals -*/
 /***************/
 
+static GOutputStream * 
+get_checksum_stream (CheckcopyFileList * list, GFile * dest)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  gchar * basename;
+  gchar * checksum_name;
+  GFileOutputStream * out;
+  GError *error = NULL;
+  GCancellable * cancel;
+  GFile *checksum = NULL;
+  gint i;
+  gchar *ext = "CHECKSUM";
+
+  cancel = checkcopy_get_cancellable ();
+  basename = g_file_get_basename (dest);
+
+  i = 0;
+  do {
+    DBG ("Try %d to generate a checksum file name", i);
+    if (checksum) {
+      g_object_unref (checksum);
+      checksum = NULL;
+    }
+
+    if (error) {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+        /* There was an error, but it was not that the file already exists.
+         * We should abort at this point. */
+
+        g_error_free (error);
+        error = NULL;
+        break;
+      } else {
+        /* continue with next iteration */
+
+        g_error_free (error);
+        error = NULL;
+
+        if (i > MAX_CHECKSUM_FILE_RETRIES)
+          break;
+      }
+    }
+
+    if (basename == NULL) {
+      checksum_name = g_strdup (ext);
+    } else {
+      if (i==0)
+        checksum_name = g_strconcat (basename, ".", ext, NULL);
+      else
+        checksum_name = g_strdup_printf ("%s-%d.%s", basename, i, ext);
+    }
+
+    checksum = g_file_resolve_relative_path (dest, checksum_name);
+    i++;
+
+  } while ((out = g_file_create (checksum, 0, cancel, &error)) == NULL);
+
+  g_free (basename);
+
+  if (out) {
+    priv->checksum_file = checksum;
+
+    return G_OUTPUT_STREAM (out);
+  } else {
+    g_object_unref (checksum);
+
+    return NULL;
+  }
+}
+
 /*******************/
 /*- public methods-*/
 /*******************/
 
 gint
-checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file, CheckcopyChecksumType checksum_type)
+checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
   GDataInputStream * in;
@@ -182,6 +253,7 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
       gchar * checksum = NULL;
       gchar * filename = NULL;
       CheckcopyFileInfo * info;
+      CheckcopyChecksumType checksum_type;
 
       /* found a checksum, parse the line into
        * checksum and filename */
@@ -192,6 +264,8 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
       c++;
 
       checksum = g_strdup (line);
+
+      checksum_type = checkcopy_file_info_get_checksum_type (line);
 
       /* skip spaces */
       while (*c == ' ' && *c != '\0') c++;
@@ -301,77 +375,6 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
   }
 
   return info->status;
-}
-
-static GOutputStream * 
-get_checksum_stream (CheckcopyFileList * list, GFile * dest)
-{
-  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
-
-  gchar * basename;
-  gchar * checksum_name;
-  GFileOutputStream * out;
-  GError *error = NULL;
-  GCancellable * cancel;
-  GFile *checksum = NULL;
-  gint i;
-  gchar *ext = "CHECKSUM";
-
-  cancel = checkcopy_get_cancellable ();
-  basename = g_file_get_basename (dest);
-
-  i = 0;
-  do {
-    DBG ("Try %d to generate a checksum file name", i);
-    if (checksum) {
-      g_object_unref (checksum);
-      checksum = NULL;
-    }
-
-    if (error) {
-      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
-        /* There was an error, but it was not that the file already exists.
-         * We should abort at this point. */
-
-        g_error_free (error);
-        error = NULL;
-        break;
-      } else {
-        /* continue with next iteration */
-
-        g_error_free (error);
-        error = NULL;
-
-        if (i > MAX_CHECKSUM_FILE_RETRIES)
-          break;
-      }
-    }
-
-    if (basename == NULL) {
-      checksum_name = g_strdup (ext);
-    } else {
-      if (i==0)
-        checksum_name = g_strconcat (basename, ".", ext, NULL);
-      else
-        checksum_name = g_strdup_printf ("%s-%d.%s", basename, i, ext);
-    }
-
-    checksum = g_file_resolve_relative_path (dest, checksum_name);
-    i++;
-
-  } while ((out = g_file_create (checksum, 0, cancel, &error)) == NULL);
-
-  g_free (basename);
-
-  if (out) {
-    priv->checksum_file = checksum;
-
-    return G_OUTPUT_STREAM (out);
-  } else {
-    g_object_unref (checksum);
-
-    return NULL;
-  }
 }
 
 gboolean

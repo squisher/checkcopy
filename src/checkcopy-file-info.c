@@ -31,9 +31,18 @@
 static gchar * checksum_type_extensions [] = {
   ".md5",
   ".sha",
+  ".sha1",
   ".sha256",
+  "CHECKSUM",
   NULL
-}; // same order as CheckscopyChecksumType
+};
+
+static int checksum_type_lengths [] = {
+  32,
+  40,
+  64,
+  0, /* NO_CHECKSUM, has to be last */
+}; /* SAME order as CheckcopyChecksumType */
 
 
 static gchar * status_text [] = {
@@ -99,23 +108,40 @@ checkcopy_file_info_free (CheckcopyFileInfo *info)
   g_free (info);
 }
 
-CheckcopyChecksumType
-checkcopy_file_info_get_checksum_type (GFile *file)
+gboolean
+checkcopy_file_info_is_checksum_file (GFile *file)
 {
   gchar * uri;
   int i;
   gchar * ext;
+  gboolean r = FALSE;
 
   uri = g_file_get_uri (file);
 
-  for (i=0; (ext = checksum_type_extensions[i]) != NULL; i++) {
+  for (i=0; (ext = checksum_type_extensions[i]) != NULL && !r; i++) {
 
     if (g_str_has_suffix (uri, ext)) {
-      return i;
+      r = TRUE;
     }
   }
 
   g_free (uri);
+
+  return r;
+}
+
+CheckcopyChecksumType
+checkcopy_file_info_get_checksum_type (gchar *checksum)
+{
+  int i;
+  gsize l;
+
+  l = strlen (checksum);
+
+  for (i=0; checksum_type_lengths[i] != 0; i++) {
+    if (l == checksum_type_lengths[i])
+      return i;
+  }
 
   return CHECKCOPY_NO_CHECKSUM;
 }
