@@ -128,8 +128,9 @@ main (int argc, char *argv[])
   int i;
 
 #if DEBUG > 0
-  DBG ("Not handlingc critical as fatal until gdk bug is resolved");
-  //g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
+  /* Not handlingc critical as fatal until gdk bug is resolved
+  g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
+  */
 #else
   g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, debug_log_handler, NULL);
 #endif
