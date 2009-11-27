@@ -492,6 +492,7 @@ cb_update_progress (gpointer data)
 
   /* idle functions are executed outside of the gdk lock */
   gdk_threads_enter ();
+  //DBG ("Updating progress");
   update_progress (dialog);
   gdk_threads_leave ();
 
@@ -504,7 +505,7 @@ set_update (ProgressDialog * dialog, gboolean enabled)
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
   if (enabled) {
-    priv->idle_tag = g_idle_add (cb_update_progress, dialog);
+    priv->idle_tag = g_timeout_add_full (G_PRIORITY_LOW, 250, cb_update_progress, dialog, NULL);
   } else {
     /* disable */
 
