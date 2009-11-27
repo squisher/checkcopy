@@ -41,7 +41,7 @@ static gchar * status_text [] = {
   "no checksum",
   "verified",
   "FAILED",
-  "Ok",
+  "copied",
   /*
   CHECKCOPY_STATUS_NONE,
   CHECKCOPY_STATUS_VERIFIABLE,

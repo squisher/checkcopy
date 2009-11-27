@@ -221,6 +221,8 @@ display_list (CheckcopyDetailsWindow * details, GList *file_infos)
 
   GList * file_info;
 
+  DBG ("Updating the list");
+
   gtk_list_store_clear (priv->store);
 
   for (file_info = file_infos; file_info != NULL; file_info = g_list_next (file_info)) {
@@ -244,10 +246,10 @@ set_color (GtkCellRenderer *renderer, CheckcopyFileStatus status)
 
   switch (status) {
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
-      color = "#ee2211";
+      color = "#ee4422";
       break;
     case CHECKCOPY_STATUS_VERIFIED:
-      color = "#11ee22";
+      color = "#22ee44";
       break;
     default:
       break;

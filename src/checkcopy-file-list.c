@@ -296,6 +296,7 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
       /* Verification passed */
 
       DBG ("%s matched checksum %s", relname, checksum);
+      info->status = CHECKCOPY_STATUS_VERIFIED;
     }
   }
 
