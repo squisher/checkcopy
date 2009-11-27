@@ -201,6 +201,7 @@ progress_dialog_init (ProgressDialog * obj)
   priv->list = checkcopy_file_list_get_instance ();
 
   gtk_window_set_default_size (GTK_WINDOW (obj), 500, 75);
+  gtk_window_set_icon_name (GTK_WINDOW (obj), GTK_STOCK_SAVE_AS);
 
   vbox = gtk_vbox_new (FALSE, 0);
   //gtk_box_pack_end (GTK_BOX (obj), hbox, TRUE, TRUE, 5);
