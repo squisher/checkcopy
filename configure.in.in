@@ -32,7 +32,7 @@ XDT_I18N([@LINGUAS@])
 XDT_CHECK_PACKAGE([GTHREAD], [gthread-2.0], [2.6.0])
 XDT_CHECK_PACKAGE([GTK], [gtk+-2.0], [2.10.0])
 XDT_CHECK_PACKAGE([XFCE], [gtk+-2.0], [2.10.0])
-XDT_CHECK_PACKAGE([LIBXFCEGUI4], [libxfcegui4-1.0], [4.4.0])
+XDT_CHECK_PACKAGE([LIBXFCE4UTIL], [libxfce4util-1.0], [4.4.0])
 XDT_CHECK_PACKAGE([GIO], [gio-unix-2.0], [2.22.0])
 AC_CHECK_HEADERS([string.h])
 
@@ -41,24 +41,24 @@ CFLAGS="$CFLAGS -DXFCE_DISABLE_DEPRECATED"
 dnl 
 dnl mhash library
 dnl 
-AC_MSG_CHECKING([for the mhash library])
-AC_LANG(C)
-AC_LANG_CONFTEST(
-  [AC_LANG_PROGRAM(
-    [[
-#include <mhash.h>
-]],[[
-  MHASH master_hash;
-  master_hash = mhash_init (MHASH_MD5);
-  mhash_deinit (master_hash, NULL);
-]])])
-if gcc -lmhash -o /dev/null conftest.c >> /dev/null; then 
-  havemhash=yes
-  AC_MSG_RESULT([$havemhash])
-  LDFLAGS="$LDFLAGS -lmhash"
-else 
-  AC_MSG_ERROR([failed to find the mhash library])
-fi
+dnl  AC_MSG_CHECKING([for the mhash library])
+dnl  AC_LANG(C)
+dnl  AC_LANG_CONFTEST(
+dnl    [AC_LANG_PROGRAM(
+dnl      [[
+dnl  #include <mhash.h>
+dnl  ]],[[
+dnl    MHASH master_hash;
+dnl    master_hash = mhash_init (MHASH_MD5);
+dnl    mhash_deinit (master_hash, NULL);
+dnl  ]])])
+dnl  if gcc -lmhash -o /dev/null conftest.c >> /dev/null; then 
+dnl    havemhash=yes
+dnl    AC_MSG_RESULT([$havemhash])
+dnl    LDFLAGS="$LDFLAGS -lmhash"
+dnl  else 
+dnl    AC_MSG_ERROR([failed to find the mhash library])
+dnl  fi
 
 BM_DEBUG_SUPPORT()
 dnl add -Wextra if debug is enabled

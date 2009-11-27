@@ -35,12 +35,14 @@ checkcopy_SOURCES = 				\
 
 checkcopy_CFLAGS = 				\
 	$(MD5COPY_CFLAGS)			\
-	$(LIBXFCEGUI4_CFLAGS)			\
+	$(GTK_CFLAGS)				\
+	$(LIBXFCE4UTIL_CFLAGS)			\
 	$(GTHREAD_CFLAGS)
 
 checkcopy_LDADD = 				\
 	$(MD5COPY_LIBS)				\
-	$(LIBXFCEGUI4_LIBS)			\
+	$(LIBXFCE4UTIL_LIBS)			\
+	$(GTK_LIBS)				\
 	$(GTHREAD_LIBS)
 
 # vi:set ts=8 sw=8 noet ai nocindent softtabstop=0 list listchars=tab\:>-:
