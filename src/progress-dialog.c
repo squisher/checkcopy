@@ -371,7 +371,7 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
   gchar *temp = NULL;
   gchar *text_time = NULL;
 
-  if (priv->status > PROGRESS_DIALOG_STATUS_RUNNING) {
+  if (priv->status >= PROGRESS_DIALOG_STATUS_FAILED) {
     GTimeVal tv;
     guint64 per_sec;
 
