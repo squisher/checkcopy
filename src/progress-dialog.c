@@ -118,7 +118,9 @@ progress_dialog_status_get_type (void)
   if (type == 0) {
     static const GEnumValue values[] = {
       {PROGRESS_DIALOG_STATUS_INIT, "PROGRESS_DIALOG_STATUS_INIT", "init"},
+      {PROGRESS_DIALOG_STATUS_CALCULATING_SIZE, "PROGRESS_DIALOG_STATUS_CALCULATING_SIZE", "calculating-size"},
       {PROGRESS_DIALOG_STATUS_RUNNING, "PROGRESS_DIALOG_STATUS_RUNNING", "running"},
+      {PROGRESS_DIALOG_STATUS_COPYING, "PROGRESS_DIALOG_STATUS_COPYING", "copying"},
       {PROGRESS_DIALOG_STATUS_FAILED, "PROGRESS_DIALOG_STATUS_FAILED", "failed"},
       {PROGRESS_DIALOG_STATUS_CANCELLED, "PROGRESS_DIALOG_STATUS_CANCELLED", "cancelled"},
       {PROGRESS_DIALOG_STATUS_COMPLETED, "PROGRESS_DIALOG_STATUS_COMPLETED", "completed"},
@@ -658,9 +660,11 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
     //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
     
     progress_dialog_set_filename (dialog, "");
+    set_action_text (dialog, status, "Done.");
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
     set_update (dialog, FALSE);
   } else if (status == PROGRESS_DIALOG_STATUS_CANCELLED) {
+    set_action_text (dialog, status, "Cancelled");
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
 
@@ -699,18 +703,6 @@ progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus
 
   gdk_threads_enter ();
   ret = progress_dialog_set_status (dialog, status);
-  gdk_threads_leave ();
-
-  return ret;
-}
-
-gboolean
-progress_dialog_thread_set_status_with_text (ProgressDialog * dialog, ProgressDialogStatus status, const gchar * text)
-{
-  gboolean ret;
-
-  gdk_threads_enter ();
-  ret = progress_dialog_set_status_with_text (dialog, status, text);
   gdk_threads_leave ();
 
   return ret;
