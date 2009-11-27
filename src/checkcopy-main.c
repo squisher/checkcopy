@@ -86,6 +86,7 @@ ask_for_destination (void)
 
   filechooser = gtk_file_chooser_dialog_new ("Destination", NULL, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
                                              GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+  gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (filechooser), FALSE);
 
   if (default_dest) {
     gchar *uri;
