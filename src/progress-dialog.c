@@ -490,9 +490,10 @@ cb_update_progress (gpointer data)
   ProgressDialog * dialog = PROGRESS_DIALOG (data);
   //ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-  //DBG ("Updating progress");
-
+  /* idle functions are executed outside of the gdk lock */
+  gdk_threads_enter ();
   update_progress (dialog);
+  gdk_threads_leave ();
 
   return TRUE;
 }
@@ -562,9 +563,6 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
   if (status == PROGRESS_DIALOG_STATUS_COMPLETED) {
     //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
     
-    // FIXME why add size? To update the status? Seems clumsy
-    progress_dialog_add_size (dialog, 0);
-
     progress_dialog_set_filename (dialog, "");
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
     set_update (dialog, FALSE);

@@ -136,9 +136,8 @@ main (int argc, char *argv[])
   
   g_set_application_name (PACKAGE_NAME);
 
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
 
+  g_thread_init (NULL);
   gdk_threads_init ();
   gdk_threads_enter ();
   xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
