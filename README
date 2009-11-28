@@ -28,6 +28,8 @@ Usage
 -----
 
 1. The source files / directories have to be specified on the command line.
+   So running just ``checkcopy'' is not going to get you anywhere. See TODO.
+
 2. The destination is can be predetermined, preselected, or simply selected.
   a. If a destination was specified by the -d switch, then the user
      will not get asked.
@@ -45,7 +47,8 @@ containing checksums. Its contents are then parsed, and remembered.
 
 While the files are copied, the checksum is created. If a checksum is on file,
 it will get compared. If no checksum was previously discovered, the computed
-one is written to disk as /foo/bar/${DESTINATION}/${DESTINATION}.CHECKSUM.
+one is written to disk as /foo/bar/${DESTINATION}/${DESTINATION}.CHECKSUM
+(currently always as sha1).
 
 
 ==============================================================================

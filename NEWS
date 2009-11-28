@@ -1,4 +1,14 @@
-md5copy 0.2
-========---
+checkcopy 0.3, 2009-11-27
+-------------------------
+* Rewrite using GIO, renamed to checkcopy.
+* Also verify checksums now.
 
-Initial release with autotools
+
+md5copy 0.2
+-----------
+* Initial release with autotools (not public).
+
+
+md5copy 0.1
+-----------
+* Initial release.

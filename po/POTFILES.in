@@ -1,5 +1,3 @@
 src/error.c
-src/md5copy.c
+src/checkcopy-main.c
 src/progress-dialog.c
-src/thread-copy.c
-src/thread-hash.c

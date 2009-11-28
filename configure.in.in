@@ -2,7 +2,7 @@ dnl Version information
 m4_define([checkcopy_version_major], [0])
 m4_define([checkcopy_version_minor], [3])
 m4_define([checkcopy_version_build], [@REVISION@])
-m4_define([checkcopy_version_tag], [git])
+m4_define([checkcopy_version_tag], [])
 m4_define([checkcopy_version], [checkcopy_version_major().checkcopy_version_minor().ifelse(checkcopy_version_tag(), [git], [checkcopy_version_tag()-checkcopy_version_build()], [checkcopy_version_tag()])])
 
 dnl Initialize autoconf
