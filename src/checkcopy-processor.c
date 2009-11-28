@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 
+#include "error.h"
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
 #include "checkcopy-file-info.h"
@@ -213,6 +214,7 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
   return -1;
 }
 
+
 static void
 process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info)
 {
@@ -225,10 +227,6 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   GFile *dst;
 
   relname = g_file_get_relative_path (root, file);
-  /* 
-  if (relname == NULL)
-    relname = g_file_get_basename (file);
-  */
 
   progress_dialog_thread_set_filename (priv->progress_dialog, relname);
 
@@ -252,13 +250,15 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     gboolean had_error = FALSE;
 
     DBG ("Mkdir %s", relname);
-    g_file_make_directory (dst, cancel, &error);
+
+    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+      g_file_make_directory (dst, cancel, &error);
 
     if (error) {
       if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
         /* not an error */
       } else {
-        g_critical ("%s: %s", relname, error->message);
+        thread_show_gerror (error);
         g_error_free (error);
         had_error = TRUE;
       }
@@ -270,8 +270,8 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
   } else {
     CheckcopyInputStream *cin;
-    GInputStream *in;
-    GOutputStream *out;
+    GInputStream *in = NULL;
+    GOutputStream *out = NULL;
     const gchar *checksum;
     CheckcopyChecksumType checksum_type;
 
@@ -289,10 +289,11 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 #endif
 
-    in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
+    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+      in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
     if (in == NULL || error) {
-      DBG ("Could not open input file: %s", error->message);
+      thread_show_gerror (error);
       g_error_free (error);
 
     } else {
@@ -304,19 +305,27 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
       cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
 
-      out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
+      if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+        out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
 
       if (out == NULL || error) {
-        DBG ("Could not create destination file: %s", error->message);
+        thread_show_gerror (error);
         g_error_free (error);
 
       } else {
         /* created output stream */
-        splice (proc, out, cin, cancel, &error);
+        if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+          splice (proc, out, cin, cancel, &error);
 
-        checksum = checkcopy_input_stream_get_checksum (cin);
+        if (error) {
+          thread_show_gerror (error);
+          g_error_free (error);
 
-        checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
+        } else {
+          checksum = checkcopy_input_stream_get_checksum (cin);
+
+          checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
+        }
 
         g_object_unref (out);
       }

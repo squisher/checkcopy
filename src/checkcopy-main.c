@@ -1,4 +1,3 @@
-/* $Id: md5copy.c 53 2009-02-16 09:39:17Z squisher $ */
 /*
  *  Copyright (c) 2008-2009 David Mohr <david@mcbf.net>
  *
@@ -43,7 +42,9 @@
  */
 
 GFile * ask_for_destination ();
+#if 0
 void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *msg, gpointer data);
+#endif
 
 
 /*
@@ -70,10 +71,12 @@ static GOptionEntry optionentries[] = {
  * implementation 
  */
 
+#if 0
 /* suppreses debug messages when DEBUG is not enabled, see main () */
 void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *msg, gpointer data)
 {
 }
+#endif
 
 /* returns a string that must be freed */
 GFile *
@@ -121,19 +124,19 @@ main (int argc, char *argv[])
 #ifdef STATS
   gchar *stats;
 #endif
-  int len;
-  gchar *display_dest;
   GFile * dest_folder;
   GAsyncQueue * queue;
   CheckcopyWorkerParams *worker_params;
   int i;
 
+#if 0
 #if DEBUG > 0
   /* Not handlingc critical as fatal until gdk bug is resolved
   g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
   */
 #else
   g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, debug_log_handler, NULL);
+#endif
 #endif
   
   g_set_application_name (PACKAGE_NAME);
@@ -180,7 +183,7 @@ main (int argc, char *argv[])
   
   /* user aborted */
   if (dest_folder == NULL)
-    exit (0);
+    goto exit;
 
 #ifdef DEBUG
   dest = g_file_get_uri (dest_folder);
@@ -212,43 +215,11 @@ main (int argc, char *argv[])
   /* transfer over to gtk */
   gtk_main ();
 
+exit:
   g_async_queue_unref (queue);
 
   /* finalization */
   gdk_threads_leave ();
 
   return EXIT_SUCCESS;
-  /*--------------------------------------------------------------------------------*/
-
-
-  //error_add_dialog (PROGRESS_DIALOG (progress_dialog));
-
-
-#define MAX_FILENAME_LEN 80
-  /* add the full destination, or abbreviated, to the window title */
-  if ((len = strlen (dest)) > MAX_FILENAME_LEN)
-    display_dest = g_strdup_printf ("%s %s...%s", PACKAGE_NAME, _("to"), dest + (len - MAX_FILENAME_LEN));
-  else
-    display_dest = g_strdup_printf ("%s %s %s", PACKAGE_NAME, _("to"), dest);
-    
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), display_dest);
-  g_free (display_dest);
-
-
-  //g_object_set (progress_dialog, "total_size", total_size, NULL);
-
-  
-
-  
-
-  g_free (dest);
-
-#ifdef STATS
-  g_message ("%s", (stats = ring_buffer_get_stats ()));
-  g_free (stats);
-#endif
-
-  g_object_unref (progress_dialog);
-    
-  return 0;
 }

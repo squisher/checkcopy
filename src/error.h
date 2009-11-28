@@ -1,4 +1,3 @@
-/* $Id: error.h 50 2009-02-16 07:36:08Z squisher $ */
 /*
  *  Copyright (c) 2008-2009 David Mohr <david@mcbf.net>
  *
@@ -32,8 +31,13 @@ enum {
 gboolean error_init();
 void error_add_dialog (ProgressDialog *progress);
 void show_error (char *fmt, ...);
-void thread_show_error (char *fmt, ...);
+
+#define thread_show_gerror(error) \
+  thread_show_gerror_full (__FILE__, __LINE__, (error))
+void thread_show_error_full (gchar * file, gint line, char *fmt, ...);
+void thread_show_gerror_full (gchar * file, gint line, GError *error);
+
 gboolean error_has_occurred ();
-GQuark md5copy_error_quark ();
+GQuark checkcopy_error_quark ();
 
 #endif /*  __ERROR_H__ */

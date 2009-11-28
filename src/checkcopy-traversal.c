@@ -24,6 +24,7 @@
 
 #include "checkcopy-traversal.h"
 #include "checkcopy-cancel.h"
+#include "error.h"
 
 
 /* internals */
@@ -58,16 +59,17 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
     name = g_file_info_get_display_name (fileinfo);
 
     if (g_file_info_get_file_type (fileinfo) == G_FILE_TYPE_DIRECTORY) {
-      GFileEnumerator *iter;
+      GFileEnumerator *iter = NULL;
       GFileInfo *child_info;
 
       //DBG ("%s is a directory", name);
 
       checkcopy_file_handler_process (fhandler, root, file, fileinfo);
 
-      iter = g_file_enumerate_children (file,
-                                        attribs,
-                                        G_FILE_QUERY_INFO_NONE, NULL, error);
+      if (!g_cancellable_set_error_if_cancelled (cancel, error))
+        iter = g_file_enumerate_children (file,
+                                          attribs,
+                                          G_FILE_QUERY_INFO_NONE, NULL, error);
 
       if (iter != NULL) {
         while ((child_info = g_file_enumerator_next_file (iter, cancel, error)) != NULL) {
@@ -75,7 +77,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           gboolean ret;
           const gchar *child_name;
 
-          if (*error)
+          if (*error && g_cancellable_is_cancelled (cancel))
             break;
 
           child_name = g_file_info_get_name (child_info);
@@ -96,9 +98,16 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           g_object_unref (child);
         } /* while */
 
-        if (*error) {
-          g_warning ("While getting next file: %s", (*error)->message);
+        if (error && *error) {
+          thread_show_gerror (*error);
+          g_error_free (*error);
           done = FALSE;
+        }
+
+      } else {
+        if (error) {
+          thread_show_gerror (*error);
+          g_error_free (*error);
         }
       } /* if iter */
 
@@ -150,7 +159,8 @@ checkcopy_traverse (GFile *file, CheckcopyFileHandler *fhandler)
   root = g_file_get_parent (file);
 
   checkcopy_traverse_file (fhandler, root, file, &error);
-  /* FIXME: handle the error */
+
+  /* errors should have been handled and freed at this point */
 
   g_object_unref (file);
   g_object_unref (root);
