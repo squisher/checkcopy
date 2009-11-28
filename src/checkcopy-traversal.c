@@ -37,7 +37,7 @@ static gboolean checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *
 static gboolean
 checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GError **error)
 {
-  GFileInfo *fileinfo;
+  GFileInfo *fileinfo = NULL;
   const gchar *name;
   GCancellable *cancel;
   gchar *attribs;
@@ -50,9 +50,10 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
   cancel = checkcopy_get_cancellable();
 
-  fileinfo = g_file_query_info (file, 
-                                attribs,
-                                G_FILE_QUERY_INFO_NONE, cancel, error);
+  if (!g_cancellable_set_error_if_cancelled (cancel, error))
+    fileinfo = g_file_query_info (file, 
+                                  attribs,
+                                  G_FILE_QUERY_INFO_NONE, cancel, error);
   
   if (fileinfo != NULL) {
 
@@ -77,7 +78,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           gboolean ret;
           const gchar *child_name;
 
-          if (*error && g_cancellable_is_cancelled (cancel))
+          if (g_cancellable_set_error_if_cancelled (cancel, error))
             break;
 
           child_name = g_file_info_get_name (child_info);
@@ -87,9 +88,6 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           if (child != NULL) {
             ret = checkcopy_traverse_file (fhandler, root, child, error);
             if (!ret) {
-              g_warning ("While traversing: %s", (*error)->message);
-
-              done = FALSE;
               g_object_unref (child);
               break;
             }
@@ -98,18 +96,13 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
           g_object_unref (child);
         } /* while */
 
-        if (error && *error) {
-          thread_show_gerror (*error);
-          g_error_free (*error);
-          done = FALSE;
-        }
-
-      } else {
-        if (error) {
-          thread_show_gerror (*error);
-          g_error_free (*error);
-        }
       } /* if iter */
+
+      if (error && *error) {
+        thread_show_gerror (*error);
+        g_error_free (*error);
+        done = FALSE;
+      }
 
     } else {
 #ifdef DEBUG

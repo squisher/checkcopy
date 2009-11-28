@@ -36,18 +36,19 @@ gboolean error_occurred;
 
 /* private prototypes  */
 
-void show_verror (gchar * file, gint line, char *fmt, va_list ap);
+void show_verror (gchar * file, gint line, gboolean abortable, char *fmt, va_list ap);
 
 
 /* private functions */
 
 void 
-show_verror (gchar * file, gint line, char *fmt, va_list ap) 
+show_verror (gchar * file, gint line, gboolean abortable, char *fmt, va_list ap) 
 {
   gchar *msg;
 
-  error_occurred = TRUE;
+  g_assert (fmt != NULL);
 
+  error_occurred = TRUE;
 
   msg = g_strdup_vprintf (fmt, ap);
 
@@ -60,14 +61,26 @@ show_verror (gchar * file, gint line, char *fmt, va_list ap)
   if (progress == NULL) {
     GtkWidget *dialog;
     gint r;
+    GtkButtonsType buttons_type;
 
-    dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK_CANCEL,
+    if (abortable) {
+      buttons_type = GTK_BUTTONS_OK_CANCEL;
+      DBG ("Creating abortable error dialog");
+    } else {
+      buttons_type = GTK_BUTTONS_OK;
+      DBG ("Creating NOT abortable error dialog");
+    }
+
+    dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, buttons_type,
                                      "%s", msg);
     r = gtk_dialog_run (GTK_DIALOG (dialog));
 
     switch (r) {
       case GTK_RESPONSE_OK:
         break;
+      case GTK_RESPONSE_DELETE_EVENT:
+        if (!abortable)
+          break;
       case GTK_RESPONSE_CANCEL:
         {
           GCancellable *cancel;
@@ -95,7 +108,16 @@ show_error (char *fmt, ...)
 {
   va_list ap;
   va_start (ap, fmt);
-  show_verror (NULL, 0, fmt, ap);
+  show_verror (NULL, 0, FALSE, fmt, ap);
+  va_end (ap);
+}
+
+void 
+show_error_full (gchar * file, gint line, gboolean abortable, char *fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  show_verror (file, line, abortable, fmt, ap);
   va_end (ap);
 }
 
@@ -106,7 +128,7 @@ thread_show_error_full (gchar * file, gint line, char *fmt, ...)
 
   va_start (ap, fmt);
   gdk_threads_enter ();
-  show_verror (file, line, fmt, ap);
+  show_verror (file, line, FALSE, fmt, ap);
   gdk_threads_leave ();
   va_end (ap);
 }
@@ -119,7 +141,9 @@ thread_show_gerror_full (gchar * file, gint line, GError *error)
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
     return;
 
-  thread_show_error_full (file, line, "%s", error->message);
+  gdk_threads_enter ();
+  show_error_full (file, line, TRUE, "%s", error->message);
+  gdk_threads_leave ();
 }
 
 gboolean

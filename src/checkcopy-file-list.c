@@ -28,6 +28,7 @@
 
 #include "checkcopy-file-list.h"
 #include "checkcopy-cancel.h"
+#include "error.h"
 
 /*- private prototypes -*/
 
@@ -144,7 +145,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
 
   gchar * basename;
   gchar * checksum_name;
-  GFileOutputStream * out;
+  GFileOutputStream * out = NULL;
   GError *error = NULL;
   GCancellable * cancel;
   GFile *checksum = NULL;
@@ -167,6 +168,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
         /* There was an error, but it was not that the file already exists.
          * We should abort at this point. */
 
+        thread_show_error ("Failed to create checksum file: %s", error->message);
         g_error_free (error);
         error = NULL;
         break;
@@ -176,8 +178,10 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
         g_error_free (error);
         error = NULL;
 
-        if (i > MAX_CHECKSUM_FILE_RETRIES)
+        if (i > MAX_CHECKSUM_FILE_RETRIES) {
+          thread_show_error ("Maximum number of retries reached.\nCould not create a checksum file.");
           break;
+        }
       }
     }
 
@@ -193,6 +197,10 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
     checksum = g_file_resolve_relative_path (dest, checksum_name);
     i++;
 
+    if (g_cancellable_set_error_if_cancelled (cancel, &error)) {
+      break;
+    }
+
   } while ((out = g_file_create (checksum, 0, cancel, &error)) == NULL);
 
   g_free (basename);
@@ -202,7 +210,8 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
 
     return G_OUTPUT_STREAM (out);
   } else {
-    g_object_unref (checksum);
+    if (checksum)
+      g_object_unref (checksum);
 
     return NULL;
   }
@@ -388,8 +397,15 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
   GOutputStream * out;
   GCancellable * cancel;
   GError *error = NULL;
+  gboolean aborted;
 
   cancel = checkcopy_get_cancellable ();
+
+  /* If we got cancelled, we still want to try this operation.
+   * So remember the state of the cancellable, and continue
+   */
+  if ((aborted = g_cancellable_is_cancelled (cancel)) == TRUE)
+    g_cancellable_reset (cancel);
 
   out = get_checksum_stream (list, dest);
 
@@ -405,7 +421,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
       gchar * line;
       gint n;
       gsize n_written;
-      gboolean r;
+      gboolean r = FALSE;
 
       if (!(info->status==CHECKCOPY_STATUS_COPIED || info->status==CHECKCOPY_STATUS_VERIFICATION_FAILED)) {
 
@@ -414,7 +430,8 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
 
       n = checkcopy_file_info_format_checksum (info, &line);
 
-      r = g_output_stream_write_all (out, line, n, &n_written, cancel, &error);
+      if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+        r = g_output_stream_write_all (out, line, n, &n_written, cancel, &error);
 
       if (!r || n != n_written) {
         gchar * disp_name;
@@ -431,10 +448,21 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
         g_free (disp_name);
       }
 
+      if (error) {
+        thread_show_gerror (error);
+        g_error_free (error);
+        g_free (line);
+        break;
+      }
+
       g_free (line);
-    }
+    } /* for */
 
     g_list_free (file_list);
+  }
+
+  if (aborted && !g_cancellable_is_cancelled (cancel)) {
+    g_cancellable_cancel (cancel);
   }
 
   return out != NULL;

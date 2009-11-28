@@ -31,10 +31,13 @@ enum {
 gboolean error_init();
 void error_add_dialog (ProgressDialog *progress);
 void show_error (char *fmt, ...);
+void show_error_full (gchar * file, gint line, gboolean abortable, char *fmt, ...);
 
+#define thread_show_error(fmt, args...) \
+  thread_show_error_full (__FILE__, __LINE__, (fmt), ## args)
+void thread_show_error_full (gchar * file, gint line, char *fmt, ...);
 #define thread_show_gerror(error) \
   thread_show_gerror_full (__FILE__, __LINE__, (error))
-void thread_show_error_full (gchar * file, gint line, char *fmt, ...);
 void thread_show_gerror_full (gchar * file, gint line, GError *error);
 
 gboolean error_has_occurred ();
