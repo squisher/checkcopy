@@ -1,3 +1,7 @@
+checkcopy 0.4, 2009-11-27
+-------------------------
+* Fix release version
+
 checkcopy 0.3, 2009-11-27
 -------------------------
 * Rewrite using GIO, renamed to checkcopy.

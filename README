@@ -2,7 +2,8 @@
 checkcopy
 =========
 
-Version 0.3, released 2009-11-27
+Version 0.4, released 2009-11-27
+http://da.mcbf.net/wiki/Checkcopy
 
 Checkcopy is a copy program which computes checksums on the fly to verify them
 and/or write them out to disk.
