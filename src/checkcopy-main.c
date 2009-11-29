@@ -23,7 +23,6 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <libxfcegui4/libxfcegui4.h>
 #include <libxfce4util/libxfce4util.h>
 #include <stdarg.h>
 #include <stdlib.h>

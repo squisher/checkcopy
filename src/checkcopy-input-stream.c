@@ -119,7 +119,7 @@ checkcopy_input_stream_class_init (CheckcopyInputStreamClass *klass)
   object_class->constructor = checkcopy_input_stream_construct;
 
   g_object_class_install_property (object_class, PROP_CHECKSUM_TYPE,
-           g_param_spec_int ("checksum-type", "Checksum type", "Checksum type", 
+           g_param_spec_int ("checksum-type", _("Checksum type"), _("Checksum type"), 
                              0, G_MAXINT, G_CHECKSUM_SHA1, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
   in_class->read_fn = read_fn;

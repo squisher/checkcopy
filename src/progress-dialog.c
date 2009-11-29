@@ -117,13 +117,13 @@ progress_dialog_status_get_type (void)
   static GType type = 0;
   if (type == 0) {
     static const GEnumValue values[] = {
-      {PROGRESS_DIALOG_STATUS_INIT, "PROGRESS_DIALOG_STATUS_INIT", "init"},
-      {PROGRESS_DIALOG_STATUS_CALCULATING_SIZE, "PROGRESS_DIALOG_STATUS_CALCULATING_SIZE", "calculating-size"},
-      {PROGRESS_DIALOG_STATUS_RUNNING, "PROGRESS_DIALOG_STATUS_RUNNING", "running"},
-      {PROGRESS_DIALOG_STATUS_COPYING, "PROGRESS_DIALOG_STATUS_COPYING", "copying"},
-      {PROGRESS_DIALOG_STATUS_FAILED, "PROGRESS_DIALOG_STATUS_FAILED", "failed"},
-      {PROGRESS_DIALOG_STATUS_CANCELLED, "PROGRESS_DIALOG_STATUS_CANCELLED", "cancelled"},
-      {PROGRESS_DIALOG_STATUS_COMPLETED, "PROGRESS_DIALOG_STATUS_COMPLETED", "completed"},
+      {PROGRESS_DIALOG_STATUS_INIT, "PROGRESS_DIALOG_STATUS_INIT", N_("init")},
+      {PROGRESS_DIALOG_STATUS_CALCULATING_SIZE, "PROGRESS_DIALOG_STATUS_CALCULATING_SIZE", N_("calculating-size")},
+      {PROGRESS_DIALOG_STATUS_RUNNING, "PROGRESS_DIALOG_STATUS_RUNNING", N_("running")},
+      {PROGRESS_DIALOG_STATUS_COPYING, "PROGRESS_DIALOG_STATUS_COPYING", N_("copying")},
+      {PROGRESS_DIALOG_STATUS_FAILED, "PROGRESS_DIALOG_STATUS_FAILED", N_("failed")},
+      {PROGRESS_DIALOG_STATUS_CANCELLED, "PROGRESS_DIALOG_STATUS_CANCELLED", N_("cancelled")},
+      {PROGRESS_DIALOG_STATUS_COMPLETED, "PROGRESS_DIALOG_STATUS_COMPLETED", N_("completed")},
       {0, NULL, NULL}
     };
     type = g_enum_register_static ("ProgressDialogStatus", values);
@@ -176,10 +176,10 @@ progress_dialog_class_init (ProgressDialogClass * klass)
 
   /* properties */
   g_object_class_install_property (object_class, PROP_STATUS,
-                                   g_param_spec_enum ("status", "Status", "Status", TYPE_PROGRESS_DIALOG_STATUS,
+                                   g_param_spec_enum ("status", N_("Status"), N_("Status"), TYPE_PROGRESS_DIALOG_STATUS,
                                                       PROGRESS_DIALOG_STATUS_INIT, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_SIZE,
-                                   g_param_spec_uint64 ("total-size", "Total Size", "Size of the whole operation",
+                                   g_param_spec_uint64 ("total-size", N_("Total Size"), N_("Size of the whole operation"),
                                                          0, -1, 0, G_PARAM_READWRITE)); 
   /*
   g_object_class_install_property (object_class, PROP_ANIMATE,
@@ -209,7 +209,7 @@ progress_dialog_init (ProgressDialog * obj)
   //gtk_box_reorder_child (box, hbox, 0);
 
   /* label */
-  priv->status_label = gtk_label_new ("Initializing ...");
+  priv->status_label = gtk_label_new (_("Initializing ..."));
   gtk_misc_set_alignment (GTK_MISC (priv->status_label), 0.1, 0.0);
   gtk_label_set_justify (GTK_LABEL (priv->status_label), GTK_JUSTIFY_LEFT);
   gtk_label_set_selectable (GTK_LABEL (priv->status_label), TRUE);
@@ -244,7 +244,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_widget_show (hbox);
 
   /* details button */
-  priv->button_details = gtk_button_new_with_label ("Details");
+  priv->button_details = gtk_button_new_with_label (_("Details"));
   gtk_widget_show (priv->button_details);
   gtk_box_pack_start (GTK_BOX (hbox), priv->button_details, FALSE, FALSE, 0);
 
@@ -259,7 +259,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_container_add (GTK_CONTAINER (align), statbox);
   gtk_widget_show (statbox);
 
-  label = gtk_label_new ("Copied:");
+  label = gtk_label_new (_("Copied:"));
   gtk_misc_set_padding (GTK_MISC (label), 4, 0);
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
@@ -268,7 +268,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  label = gtk_label_new ("Verified:");
+  label = gtk_label_new (_("Verified:"));
   gtk_misc_set_padding (GTK_MISC (label), 4, 0);
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
@@ -277,7 +277,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  label = gtk_label_new ("Failed:");
+  label = gtk_label_new (_("Failed:"));
   gtk_misc_set_padding (GTK_MISC (label), 4, 0);
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
@@ -388,7 +388,7 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
     }
 
     g_message ("Time elapsed: %ld.%lds", tv.tv_sec, tv.tv_usec);
-    text_time = g_strdup_printf ("%s (%lluMB/s, %ldm%2lds)", text, per_sec / (1024*1024), tv.tv_sec / 60, tv.tv_sec % 60);
+    text_time = g_strdup_printf (_("%s (%lluMB/s, %ldm%2lds)"), text, per_sec / (1024*1024), tv.tv_sec / 60, tv.tv_sec % 60);
   } else {
     text_time = g_strdup (text);
   }
@@ -572,7 +572,7 @@ cb_cancel (GCancellable *cancel, ProgressDialog * dialog)
   DBG ("Cancelled....");
 
 
-  progress_dialog_set_status_with_text (dialog, PROGRESS_DIALOG_STATUS_CANCELLED, "Cancelled");
+  progress_dialog_set_status_with_text (dialog, PROGRESS_DIALOG_STATUS_CANCELLED, _("Cancelled"));
 }
 
 static gboolean
@@ -646,13 +646,13 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
   priv->status = status;
 
   if (status == PROGRESS_DIALOG_STATUS_CALCULATING_SIZE) {
-    set_action_text (dialog, status, "Calculating size....");
+    set_action_text (dialog, status, _("Calculating size...."));
     g_get_current_time (&(priv->tv_start));
   } else {
     g_get_current_time (&(priv->tv_end));
 
     if (status == PROGRESS_DIALOG_STATUS_COPYING) {
-      set_action_text (dialog, status, "Copying....");
+      set_action_text (dialog, status, _("Copying...."));
       set_update (dialog, TRUE);
     }
   }
@@ -661,11 +661,11 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
     //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
     
     progress_dialog_set_filename (dialog, "");
-    set_action_text (dialog, status, "Done.");
+    set_action_text (dialog, status, _("Done."));
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
     set_update (dialog, FALSE);
   } else if (status == PROGRESS_DIALOG_STATUS_CANCELLED) {
-    set_action_text (dialog, status, "Cancelled");
+    set_action_text (dialog, status, _("Cancelled"));
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
   }
 

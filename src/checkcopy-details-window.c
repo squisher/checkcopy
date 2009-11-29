@@ -118,7 +118,7 @@ checkcopy_details_window_class_init (CheckcopyDetailsWindowClass *klass)
   object_class->finalize = checkcopy_details_window_finalize;
 
   g_object_class_install_property (object_class, PROP_FILE_INFO_LIST,
-           g_param_spec_pointer ("file-info-list", "List of file infos", "List of file infos", G_PARAM_WRITABLE));
+           g_param_spec_pointer ("file-info-list", _("List of file infos"), _("List of file infos"), G_PARAM_WRITABLE));
 }
 
 static void
@@ -136,7 +136,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   GtkCellRenderer *renderer, *hash_renderer;
   GtkTreeView *view;
 
-  gtk_window_set_title (GTK_WINDOW (self), "Details");
+  gtk_window_set_title (GTK_WINDOW (self), _("Details"));
   gtk_window_set_default_size (GTK_WINDOW (self), 750, 450);
 
   /* basic layout */
@@ -171,7 +171,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   view = GTK_TREE_VIEW (priv->view);
   renderer = gtk_cell_renderer_text_new ();
 
-  column = gtk_tree_view_column_new_with_attributes ("Filename", renderer, "text", COLUMN_RELNAME, NULL);
+  column = gtk_tree_view_column_new_with_attributes (_("Filename"), renderer, "text", COLUMN_RELNAME, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_RELNAME), NULL);
   gtk_tree_view_column_set_sort_column_id (column, COLUMN_RELNAME);
   gtk_tree_view_column_set_sort_indicator (column, TRUE);
@@ -179,13 +179,13 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
 
   hash_renderer = gtk_cell_renderer_text_new ();
   g_object_set (G_OBJECT (hash_renderer), "family", "Monospace", "family-set", TRUE, NULL);
-  column = gtk_tree_view_column_new_with_attributes ("Hash", hash_renderer, "text", COLUMN_HASH, NULL);
+  column = gtk_tree_view_column_new_with_attributes (_("Hash"), hash_renderer, "text", COLUMN_HASH, NULL);
   gtk_tree_view_column_set_cell_data_func (column, hash_renderer, cell_string, GINT_TO_POINTER (COLUMN_HASH), NULL);
   gtk_tree_view_column_set_sort_column_id (column, COLUMN_HASH);
   gtk_tree_view_column_set_sort_indicator (column, TRUE);
   gtk_tree_view_append_column (GTK_TREE_VIEW (priv->view), column);
 
-  column = gtk_tree_view_column_new_with_attributes ("Status", renderer, "text", COLUMN_STATUS, NULL);
+  column = gtk_tree_view_column_new_with_attributes (_("Status"), renderer, "text", COLUMN_STATUS, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_status_to_string, self, NULL);
   gtk_tree_view_column_set_sort_column_id (column, COLUMN_STATUS);
   gtk_tree_view_column_set_sort_indicator (column, TRUE);

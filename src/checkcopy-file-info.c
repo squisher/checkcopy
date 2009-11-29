@@ -46,11 +46,11 @@ static int checksum_type_lengths [] = {
 
 
 static gchar * status_text [] = {
-  "none",
-  "checksum found",
-  "verified",
-  "FAILED",
-  "copied",
+  N_("none"),
+  N_("checksum found"),
+  N_("verified"),
+  N_("FAILED"),
+  N_("copied"),
   /*
   CHECKCOPY_STATUS_NONE,
   CHECKCOPY_STATUS_VERIFIABLE,

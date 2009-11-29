@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-10-27 22:08-0600\n"
+"POT-Creation-Date: 2009-11-28 23:27-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,67 +16,156 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/md5copy.c:136 ../src/thread-copy.c:244
+#: ../src/checkcopy-details-window.c:121
+msgid "List of file infos"
+msgstr ""
+
+#. details button
+#: ../src/checkcopy-details-window.c:139 ../src/progress-dialog.c:247
+msgid "Details"
+msgstr ""
+
+#: ../src/checkcopy-details-window.c:174
+msgid "Filename"
+msgstr ""
+
+#: ../src/checkcopy-details-window.c:182
+msgid "Hash"
+msgstr ""
+
+#: ../src/checkcopy-details-window.c:188 ../src/progress-dialog.c:179
+msgid "Status"
+msgstr ""
+
+#: ../src/checkcopy-file-info.c:49
+msgid "none"
+msgstr ""
+
+#: ../src/checkcopy-file-info.c:50
+msgid "checksum found"
+msgstr ""
+
+#: ../src/checkcopy-file-info.c:51
+msgid "verified"
+msgstr ""
+
+#: ../src/checkcopy-file-info.c:52
+msgid "FAILED"
+msgstr ""
+
+#: ../src/checkcopy-file-info.c:53
+msgid "copied"
+msgstr ""
+
+#. There was an error, but it was not that the file already exists.
+#. * We should abort at this point.
+#: ../src/checkcopy-file-list.c:171
 #, c-format
-msgid "Could not stat %s"
+msgid "Failed to create checksum file: %s"
 msgstr ""
 
-#: ../src/md5copy.c:241 ../src/md5copy.c:243
-msgid "to"
+#: ../src/checkcopy-file-list.c:182
+msgid ""
+"Maximum number of retries reached.\n"
+"Could not create a checksum file."
 msgstr ""
 
-#: ../src/md5copy.c:265
-msgid "Could not initialize mhash library"
+#: ../src/checkcopy-input-stream.c:122
+msgid "Checksum type"
 msgstr ""
 
-#: ../src/progress-dialog.c:374
+#: ../src/checkcopy-planner.c:114
+msgid "Total size"
+msgstr ""
+
+#: ../src/checkcopy-planner.c:116 ../src/checkcopy-processor.c:120
+msgid "Progress dialog"
+msgstr ""
+
+#: ../src/checkcopy-processor.c:118
+msgid "Destination folder"
+msgstr ""
+
+#: ../src/progress-dialog.c:120
+msgid "init"
+msgstr ""
+
+#: ../src/progress-dialog.c:121
+msgid "calculating-size"
+msgstr ""
+
+#: ../src/progress-dialog.c:122
+msgid "running"
+msgstr ""
+
+#: ../src/progress-dialog.c:123
+msgid "copying"
+msgstr ""
+
+#: ../src/progress-dialog.c:124
+msgid "failed"
+msgstr ""
+
+#: ../src/progress-dialog.c:125
+msgid "cancelled"
+msgstr ""
+
+#: ../src/progress-dialog.c:126
+msgid "completed"
+msgstr ""
+
+#: ../src/progress-dialog.c:182
+msgid "Total Size"
+msgstr ""
+
+#: ../src/progress-dialog.c:182
+msgid "Size of the whole operation"
+msgstr ""
+
+#. gtk_box_reorder_child (box, hbox, 0);
+#. label
+#: ../src/progress-dialog.c:212
+msgid "Initializing ..."
+msgstr ""
+
+#: ../src/progress-dialog.c:262
+msgid "Copied:"
+msgstr ""
+
+#: ../src/progress-dialog.c:271
+msgid "Verified:"
+msgstr ""
+
+#: ../src/progress-dialog.c:280
+msgid "Failed:"
+msgstr ""
+
+#: ../src/progress-dialog.c:391
+#, c-format
+msgid "%s (%lluMB/s, %ldm%2lds)"
+msgstr ""
+
+#: ../src/progress-dialog.c:456
 msgid "Failed"
 msgstr ""
 
-#: ../src/progress-dialog.c:377
+#: ../src/progress-dialog.c:459 ../src/progress-dialog.c:575
+#: ../src/progress-dialog.c:668
 msgid "Cancelled"
 msgstr ""
 
-#: ../src/progress-dialog.c:380
+#: ../src/progress-dialog.c:462
 msgid "Completed"
 msgstr ""
 
-#: ../src/thread-copy.c:45
-msgid "Copying..."
+#: ../src/progress-dialog.c:649
+msgid "Calculating size...."
 msgstr ""
 
-#: ../src/thread-copy.c:76
+#: ../src/progress-dialog.c:655
+msgid "Copying...."
+msgstr ""
+
+#: ../src/progress-dialog.c:664
 msgid "Done."
-msgstr ""
-
-#: ../src/thread-copy.c:109
-#, c-format
-msgid "Failed to create %s"
-msgstr ""
-
-#: ../src/thread-copy.c:146
-msgid "An error occurred while reading"
-msgstr ""
-
-#: ../src/thread-copy.c:161
-msgid "EOF occurred while writing"
-msgstr ""
-
-#: ../src/thread-copy.c:165
-msgid "An error occurred while writing"
-msgstr ""
-
-#: ../src/thread-copy.c:214
-#, c-format
-msgid "Error opening %s for reading"
-msgstr ""
-
-#: ../src/thread-copy.c:222
-#, c-format
-msgid "Error opening %s for writing"
-msgstr ""
-
-#: ../src/thread-hash.c:97
-#, c-format
-msgid "Error opening %s for writing the hash"
 msgstr ""

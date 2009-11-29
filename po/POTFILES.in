@@ -1,3 +1,8 @@
-src/error.c
+src/checkcopy-details-window.c
+src/checkcopy-file-info.c
+src/checkcopy-file-list.c
+src/checkcopy-input-stream.c
 src/checkcopy-main.c
+src/checkcopy-planner.c
+src/checkcopy-processor.c
 src/progress-dialog.c

@@ -168,7 +168,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
         /* There was an error, but it was not that the file already exists.
          * We should abort at this point. */
 
-        thread_show_error ("Failed to create checksum file: %s", error->message);
+        thread_show_error (_("Failed to create checksum file: %s"), error->message);
         g_error_free (error);
         error = NULL;
         break;
@@ -179,7 +179,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
         error = NULL;
 
         if (i > MAX_CHECKSUM_FILE_RETRIES) {
-          thread_show_error ("Maximum number of retries reached.\nCould not create a checksum file.");
+          thread_show_error (_("Maximum number of retries reached.\nCould not create a checksum file."));
           break;
         }
       }
@@ -285,7 +285,7 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
       /* rest of the line is the file name */
 
       if (*prefix != '\0')
-        filename = g_strconcat (prefix, "/", c, NULL);
+        filename = g_strconcat (prefix, G_DIR_SEPARATOR_S, c, NULL);
       else
         filename = g_strdup (c);
 

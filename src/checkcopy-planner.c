@@ -111,9 +111,9 @@ checkcopy_planner_class_init (CheckcopyPlannerClass *klass)
   object_class->finalize = checkcopy_planner_finalize;
 
   g_object_class_install_property (object_class, PROP_TOTAL_SIZE,
-           g_param_spec_int64 ("total-size", "Total size", "Total size", 0, G_MAXINT64, 0, G_PARAM_READABLE));
+           g_param_spec_int64 ("total-size", _("Total size"), _("Total size"), 0, G_MAXINT64, 0, G_PARAM_READABLE));
   g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
-           g_param_spec_object ("progress-dialog", "Progress dialog", "Progress dialog", TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
+           g_param_spec_object ("progress-dialog", _("Progress dialog"), _("Progress dialog"), TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
 }
 
 static void

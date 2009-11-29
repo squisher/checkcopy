@@ -115,9 +115,9 @@ checkcopy_processor_class_init (CheckcopyProcessorClass *klass)
   object_class->finalize = checkcopy_processor_finalize;
 
   g_object_class_install_property (object_class, PROP_DESTINATION,
-           g_param_spec_object ("destination", "Destination folder", "Destination folder", G_TYPE_FILE, G_PARAM_READWRITE));
+           g_param_spec_object ("destination", _("Destination folder"), _("Destination folder"), G_TYPE_FILE, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
-           g_param_spec_object ("progress-dialog", "Progress dialog", "Progress dialog", TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
+           g_param_spec_object ("progress-dialog", _("Progress dialog"), _("Progress dialog"), TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
 }
 
 static void
