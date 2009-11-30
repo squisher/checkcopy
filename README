@@ -2,11 +2,11 @@
 checkcopy
 =========
 
-Version 0.4, released 2009-11-27
+Version 0.5, released 2009-11-XX
 http://da.mcbf.net/wiki/Checkcopy
 
 Checkcopy is a copy program which computes checksums on the fly to verify them
-and/or write them out to disk.
+and/or write them out to disk. It can also be used to just verify checksums.
 
 This program will copy one or more files / directories to a destination,
 and compute its checksum on the fly. If checksum files are getting copied
@@ -33,11 +33,14 @@ Usage
 
 2. The destination is can be predetermined, preselected, or simply selected.
   a. If a destination was specified by the -d switch, then the user
-     will not get asked.
+     will not get asked for one.
   b. If a default destination was specified by the -D switch, then a file
      chooser will get displayed, starting at the specified URI.
   c. Otherwise, a file chooser will be shown with the current directory as the
      starting location.
+
+If you would like to just verify the files, and not copy them, then specify
+``-d verify://'' on the command line.
 
 This should allow easy bindings in file managers.
 

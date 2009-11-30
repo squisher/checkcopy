@@ -56,7 +56,7 @@ static gboolean show_version = FALSE;
 
 static GOptionEntry optionentries[] = {
   { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest, 
-    "Specifies the destination of the copy operation", "SOME_DIR"},
+    "Specifies the destination of the copy operation, or verify://", "SOME_DIR"},
   { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest, 
     "Specifies the default destination of the copy operation", "SOME_DIR"},
   { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
@@ -178,6 +178,10 @@ main (int argc, char *argv[])
     dest_folder = ask_for_destination();
   } else {
     dest_folder = g_file_new_for_commandline_arg (dest);
+
+    if (g_file_has_uri_scheme (dest_folder, "verify")) {
+      g_message ("Verification-only mode");
+    }
   }
   
   /* user aborted */

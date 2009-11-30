@@ -1,6 +1,10 @@
+checkcopy 0.5, 2009-11-XX
+-------------------------
+* Allow to just verify files by using the special verify:// destination.
+
 checkcopy 0.4, 2009-11-27
 -------------------------
-* Fix release version
+* Fix release version.
 
 checkcopy 0.3, 2009-11-27
 -------------------------

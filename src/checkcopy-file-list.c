@@ -401,6 +401,11 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
 
   cancel = checkcopy_get_cancellable ();
 
+  if (g_file_has_uri_scheme (dest, VERIFY_SCHEME)) {
+    g_message ("Not writing checksum file because we are only verifying");
+    return TRUE;
+  }
+
   /* If we got cancelled, we still want to try this operation.
    * So remember the state of the cancellable, and continue
    */

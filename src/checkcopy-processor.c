@@ -40,6 +40,11 @@ static void checkcopy_processor_finalize (GObject *obj);
 static void process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info);
 static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 
+static void process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gchar * relname, gboolean verify_only);
+static void process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * dst, gchar * relname, gboolean verify_only);
+static gboolean verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin);
+static gboolean copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst);
+
 /*- globals -*/
 
 enum {
@@ -204,7 +209,6 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
     }
   while (res);
 
-  // FIXME: handle errors
   g_input_stream_close (source, cancellable, NULL);
   g_output_stream_close (stream, cancellable, NULL);
 
@@ -216,21 +220,208 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
 
 
 static void
+process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gchar * relname, gboolean verify_only)
+{
+  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+
+  GCancellable * cancel = checkcopy_get_cancellable ();
+  GError *error = NULL;
+  gboolean had_error = FALSE;
+
+  if (verify_only) {
+    /* do nothing */
+    return;
+  }
+
+  DBG ("Mkdir %s", relname);
+
+  if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+    g_file_make_directory (dst, cancel, &error);
+
+  if (error) {
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+      /* not an error */
+    } else {
+      thread_show_gerror (error);
+      g_error_free (error);
+      had_error = TRUE;
+    }
+  }
+
+  if (!had_error) {
+    progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
+  }
+}
+
+
+static gboolean
+copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst)
+{
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+
+  GCancellable * cancel = checkcopy_get_cancellable ();
+  GError *error = NULL;
+  gboolean r;
+
+  GOutputStream *out = NULL;
+
+  if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+    out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
+
+  if (out == NULL || error) {
+    thread_show_gerror (error);
+    g_error_free (error);
+    error = NULL;
+
+    r = FALSE;
+
+  } else {
+    /* created output stream */
+    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+      splice (proc, out, cin, cancel, &error);
+
+    if (error) {
+      thread_show_gerror (error);
+      g_error_free (error);
+      error = NULL;
+
+      r = FALSE;
+    } else {
+      r = TRUE;
+    }
+
+    g_object_unref (out);
+  }
+
+  return r;
+}
+
+
+static gboolean
+verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
+{
+  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+
+  gboolean r = TRUE;
+  GInputStream *source;
+  gssize n_read;
+  char buffer[8192];
+  GError * error = NULL;
+  GCancellable * cancel = checkcopy_get_cancellable ();
+
+  g_assert (cin != NULL);
+
+  source = G_INPUT_STREAM (cin);
+
+  do {
+    n_read = g_input_stream_read (source, buffer, sizeof (buffer), cancel, &error);
+
+    progress_dialog_thread_add_size (priv->progress_dialog, n_read);
+
+    if (n_read == -1) {
+      thread_show_gerror (error);
+      g_error_free (error);
+      error = NULL;
+
+      r = FALSE;
+    }
+    
+    if (n_read == 0) {
+      break;
+    }
+  } while (r);
+
+  g_input_stream_close (source, cancel, NULL);
+
+  return r;
+}
+
+
+static void 
+process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * dst, gchar * relname, gboolean verify_only)
+{
+  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+
+  GCancellable * cancel = checkcopy_get_cancellable ();
+  GError *error = NULL;
+
+  CheckcopyInputStream *cin;
+  GInputStream *in = NULL;
+  const gchar *checksum;
+  CheckcopyChecksumType checksum_type;
+
+  /* we assume it is a file */
+
+  DBG ("Copy  %s", relname);
+
+#if 0
+#ifdef DEBUG
+  {
+    gchar *uri = g_file_get_uri (file);
+    DBG ("Src = %s", uri);
+    g_free (uri);
+  }
+#endif
+#endif
+
+  if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+    in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
+
+  if (in == NULL || error) {
+    thread_show_gerror (error);
+    g_error_free (error);
+    error = NULL;
+
+  } else {
+    /* created input stream successfully */
+
+    gboolean r;
+
+    checksum_type = checkcopy_file_list_get_file_type (priv->list, relname);
+    if (checksum_type == CHECKCOPY_NO_CHECKSUM)
+      checksum_type = CHECKCOPY_SHA1;
+
+    cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
+
+    if (verify_only) {
+      r = verify_file (proc, cin);
+    } else {
+      r = copy_file (proc, cin, dst);
+    }
+
+    if (r) {
+      checksum = checkcopy_input_stream_get_checksum (cin);
+
+      checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
+    }
+
+    g_object_unref (in);
+    g_object_unref (cin);
+  }
+}
+
+
+static void
 process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info)
 {
   CheckcopyProcessor *proc = CHECKCOPY_PROCESSOR (fhandler);
   CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
 
-  GCancellable * cancel = checkcopy_get_cancellable ();
   gchar *relname;
-  GError *error = NULL;
-  GFile *dst;
+  GFile *dst = NULL;
+  gboolean verify_only;
 
   relname = g_file_get_relative_path (root, file);
 
   progress_dialog_thread_set_filename (priv->progress_dialog, relname);
 
-  dst = g_file_resolve_relative_path (priv->dest, relname);
+  verify_only = g_file_has_uri_scheme (priv->dest, VERIFY_SCHEME);
+
+  if (!verify_only) {
+    dst = g_file_resolve_relative_path (priv->dest, relname);
+  } else {
+    dst = g_object_ref (G_OBJECT (priv->dest));
+  }
 
 #ifdef DEBUG
   {
@@ -247,97 +438,13 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 
   if (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY) {
-    gboolean had_error = FALSE;
-
-    DBG ("Mkdir %s", relname);
-
-    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
-      g_file_make_directory (dst, cancel, &error);
-
-    if (error) {
-      if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
-        /* not an error */
-      } else {
-        thread_show_gerror (error);
-        g_error_free (error);
-        had_error = TRUE;
-      }
-    }
-
-    if (!had_error) {
-      progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
-    }
+    process_directory (proc, info, dst, relname, verify_only);
 
   } else {
-    CheckcopyInputStream *cin;
-    GInputStream *in = NULL;
-    GOutputStream *out = NULL;
-    const gchar *checksum;
-    CheckcopyChecksumType checksum_type;
-
-    /* we assume it is a file */
-
-    DBG ("Copy  %s", relname);
-
-#if 0
-#ifdef DEBUG
-    {
-      gchar *uri = g_file_get_uri (file);
-      DBG ("Src = %s", uri);
-      g_free (uri);
-    }
-#endif
-#endif
-
-    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
-      in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
-
-    if (in == NULL || error) {
-      thread_show_gerror (error);
-      g_error_free (error);
-      error = NULL;
-
-    } else {
-      /* created input stream successfully */
-
-      checksum_type = checkcopy_file_list_get_file_type (priv->list, relname);
-      if (checksum_type == CHECKCOPY_NO_CHECKSUM)
-        checksum_type = CHECKCOPY_SHA1;
-
-      cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
-
-      if (!g_cancellable_set_error_if_cancelled (cancel, &error))
-        out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
-
-      if (out == NULL || error) {
-        thread_show_gerror (error);
-        g_error_free (error);
-        error = NULL;
-
-      } else {
-        /* created output stream */
-        if (!g_cancellable_set_error_if_cancelled (cancel, &error))
-          splice (proc, out, cin, cancel, &error);
-
-        if (error) {
-          thread_show_gerror (error);
-          g_error_free (error);
-          error = NULL;
-
-        } else {
-          checksum = checkcopy_input_stream_get_checksum (cin);
-
-          checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
-        }
-
-        g_object_unref (out);
-      }
-
-      g_object_unref (in);
-      g_object_unref (cin);
-    }
+    process_file (proc, file, info, dst, relname, verify_only);
   }
 
+  g_object_unref (dst);
   g_free (relname);
 }
 

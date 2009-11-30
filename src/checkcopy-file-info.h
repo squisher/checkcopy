@@ -45,6 +45,8 @@ typedef struct {
   CheckcopyFileStatus status;
 } CheckcopyFileInfo;
 
+#define VERIFY_SCHEME "verify"
+
 
 void checkcopy_file_info_free (CheckcopyFileInfo *info);
 
