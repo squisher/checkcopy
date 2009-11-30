@@ -1,171 +1,171 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# Deutsche Übersetzung von checkcopy.
+# Copyright (C) 2009 David Mohr
+# This file is distributed under the same license as the checkcopy package.
+# David Mohr <david@mcbf.net>, 2009.
+# David Mohr <david@mcbf.net>, 2009.
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-11-28 23:27-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Project-Id-Version: checkcopy 0.5\n"
+"Report-Msgid-Bugs-To: david@mcbf.net\n"
+"POT-Creation-Date: 2009-11-29 23:59-0700\n"
+"PO-Revision-Date: 2009-11-30 00:35-0700\n"
+"Last-Translator: David Mohr <david@mcbf.net>\n"
+"Language-Team: de <>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
-"Content-Transfer-Encoding: 8bit\n"
+"Content-Type: text/plain; charset=UTF8\n"
+"Content-Transfer-Encoding: \n"
 
 #: ../src/checkcopy-details-window.c:121
 msgid "List of file infos"
-msgstr ""
+msgstr "Liste der Datei-Informationen"
 
 #. details button
 #: ../src/checkcopy-details-window.c:139 ../src/progress-dialog.c:247
 msgid "Details"
-msgstr ""
+msgstr "Details"
 
 #: ../src/checkcopy-details-window.c:174
 msgid "Filename"
-msgstr ""
+msgstr "Dateiname"
 
 #: ../src/checkcopy-details-window.c:182
 msgid "Hash"
-msgstr ""
+msgstr "Hash"
 
 #: ../src/checkcopy-details-window.c:188 ../src/progress-dialog.c:179
 msgid "Status"
-msgstr ""
+msgstr "Status"
 
 #: ../src/checkcopy-file-info.c:49
 msgid "none"
-msgstr ""
+msgstr "keiner"
 
 #: ../src/checkcopy-file-info.c:50
 msgid "checksum found"
-msgstr ""
+msgstr "Prüfsumme gefunden"
 
 #: ../src/checkcopy-file-info.c:51
 msgid "verified"
-msgstr ""
+msgstr "verifiziert"
 
 #: ../src/checkcopy-file-info.c:52
 msgid "FAILED"
-msgstr ""
+msgstr "fehlgeschlagen"
 
 #: ../src/checkcopy-file-info.c:53
 msgid "copied"
-msgstr ""
+msgstr "kopiert"
 
 #. There was an error, but it was not that the file already exists.
 #. * We should abort at this point.
-#: ../src/checkcopy-file-list.c:171
+#: ../src/checkcopy-file-list.c:190
 #, c-format
 msgid "Failed to create checksum file: %s"
-msgstr ""
+msgstr "Das Erstellen der Prüfsummendatei %s ist fehlgeschlagen"
 
-#: ../src/checkcopy-file-list.c:182
+#: ../src/checkcopy-file-list.c:201
 msgid ""
 "Maximum number of retries reached.\n"
 "Could not create a checksum file."
-msgstr ""
+msgstr "Maximale Anzahl von Wiederhohlugsversuchen erreicht. Die Prüfsummendatei konnte nicht erstellt werden."
 
 #: ../src/checkcopy-input-stream.c:122
 msgid "Checksum type"
-msgstr ""
+msgstr "Prüfsummentyp"
 
 #: ../src/checkcopy-planner.c:114
 msgid "Total size"
-msgstr ""
+msgstr "Gesammtgröß."
 
-#: ../src/checkcopy-planner.c:116 ../src/checkcopy-processor.c:120
+#: ../src/checkcopy-planner.c:116 ../src/checkcopy-processor.c:125
 msgid "Progress dialog"
-msgstr ""
+msgstr "Fortschrittsdialog"
 
-#: ../src/checkcopy-processor.c:118
+#: ../src/checkcopy-processor.c:123
 msgid "Destination folder"
-msgstr ""
+msgstr "Zielverzeichniss"
 
 #: ../src/progress-dialog.c:120
 msgid "init"
-msgstr ""
+msgstr "Initialisierung"
 
 #: ../src/progress-dialog.c:121
 msgid "calculating-size"
-msgstr ""
+msgstr "Größe-berechnen"
 
 #: ../src/progress-dialog.c:122
 msgid "running"
-msgstr ""
+msgstr "wird-ausgeführt"
 
 #: ../src/progress-dialog.c:123
 msgid "copying"
-msgstr ""
+msgstr "kopieren"
 
 #: ../src/progress-dialog.c:124
 msgid "failed"
-msgstr ""
+msgstr "fehlgeschlagen"
 
 #: ../src/progress-dialog.c:125
 msgid "cancelled"
-msgstr ""
+msgstr "abgebrochen"
 
 #: ../src/progress-dialog.c:126
 msgid "completed"
-msgstr ""
+msgstr "beendet"
 
 #: ../src/progress-dialog.c:182
 msgid "Total Size"
-msgstr ""
+msgstr "Gesammtgröße"
 
 #: ../src/progress-dialog.c:182
 msgid "Size of the whole operation"
-msgstr ""
+msgstr "Größe der kompletten Aktion"
 
 #. gtk_box_reorder_child (box, hbox, 0);
 #. label
 #: ../src/progress-dialog.c:212
 msgid "Initializing ..."
-msgstr ""
+msgstr "Initialisieren"
 
 #: ../src/progress-dialog.c:262
 msgid "Copied:"
-msgstr ""
+msgstr "Kopiert:"
 
 #: ../src/progress-dialog.c:271
 msgid "Verified:"
-msgstr ""
+msgstr "Verifiziert:"
 
 #: ../src/progress-dialog.c:280
 msgid "Failed:"
-msgstr ""
+msgstr "Fehlgeschlagen:"
 
 #: ../src/progress-dialog.c:391
 #, c-format
 msgid "%s (%lluMB/s, %ldm%2lds)"
-msgstr ""
+msgstr "%s (%lluMB/s, %ldm%2lds)"
 
 #: ../src/progress-dialog.c:456
 msgid "Failed"
-msgstr ""
+msgstr "Fehlgeschlagen"
 
 #: ../src/progress-dialog.c:459 ../src/progress-dialog.c:575
 #: ../src/progress-dialog.c:668
 msgid "Cancelled"
-msgstr ""
+msgstr "Abgebrochen"
 
 #: ../src/progress-dialog.c:462
 msgid "Completed"
-msgstr ""
+msgstr "Abgeschlossen"
 
 #: ../src/progress-dialog.c:649
 msgid "Calculating size...."
-msgstr ""
+msgstr "Größe wird berechnet..."
 
 #: ../src/progress-dialog.c:655
 msgid "Copying...."
-msgstr ""
+msgstr "Am kopieren"
 
 #: ../src/progress-dialog.c:664
 msgid "Done."
-msgstr ""
+msgstr "Fertig."
