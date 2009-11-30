@@ -451,6 +451,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
       if (error) {
         thread_show_gerror (error);
         g_error_free (error);
+        error = NULL;
         g_free (line);
         break;
       }

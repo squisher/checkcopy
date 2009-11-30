@@ -295,6 +295,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     if (in == NULL || error) {
       thread_show_gerror (error);
       g_error_free (error);
+      error = NULL;
 
     } else {
       /* created input stream successfully */
@@ -311,6 +312,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
       if (out == NULL || error) {
         thread_show_gerror (error);
         g_error_free (error);
+        error = NULL;
 
       } else {
         /* created output stream */
@@ -320,6 +322,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
         if (error) {
           thread_show_gerror (error);
           g_error_free (error);
+          error = NULL;
 
         } else {
           checksum = checkcopy_input_stream_get_checksum (cin);

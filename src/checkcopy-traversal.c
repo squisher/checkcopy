@@ -101,6 +101,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
       if (error && *error) {
         thread_show_gerror (*error);
         g_error_free (*error);
+        *error = NULL;
         done = FALSE;
       }
 
