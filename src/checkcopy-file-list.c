@@ -153,6 +153,25 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
   gchar *ext = "CHECKSUM";
 
   cancel = checkcopy_get_cancellable ();
+
+  if (priv->checksum_file) {
+    /* We already have a file. Just append to it. */
+    out = g_file_append_to (priv->checksum_file, 0, cancel, &error);
+
+    if (!out || error) {
+      thread_show_gerror (error);
+      g_error_free (error);
+      error = NULL;
+
+      return NULL;
+    } else {
+      return out;
+    }
+  }
+
+
+  /* We do not have a file yet, search for one */
+
   basename = g_file_get_basename (dest);
 
   i = 0;
@@ -463,6 +482,16 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
 
       g_free (line);
     } /* for */
+
+
+    if (!g_cancellable_set_error_if_cancelled (cancel, &error))
+      g_output_stream_close (out, cancel, &error);
+
+    if (error) {
+      thread_show_gerror (error);
+      g_error_free (error);
+      error = NULL;
+    }
 
     g_list_free (file_list);
   }
