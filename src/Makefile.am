@@ -8,6 +8,7 @@ checkcopy_headers = 				\
 	progress-dialog.h			\
 	checkcopy-cancel.h			\
 	checkcopy-file-handler.h		\
+	checkcopy-file-handler-base.h		\
 	checkcopy-planner.h			\
 	checkcopy-processor.h			\
 	checkcopy-input-stream.h		\
@@ -24,6 +25,7 @@ checkcopy_SOURCES = 				\
 	progress-dialog.c			\
 	checkcopy-cancel.c			\
 	checkcopy-file-handler.c		\
+	checkcopy-file-handler-base.c		\
 	checkcopy-planner.c			\
 	checkcopy-processor.c			\
 	checkcopy-input-stream.c		\

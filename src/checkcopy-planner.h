@@ -23,6 +23,7 @@
 #include <glib-object.h>
 
 #include "progress-dialog.h"
+#include "checkcopy-file-handler-base.h"
 
 G_BEGIN_DECLS
 
@@ -44,7 +45,7 @@ G_BEGIN_DECLS
   (G_TYPE_INSTANCE_GET_CLASS ((obj), CHECKCOPY_TYPE_PLANNER, CheckcopyPlannerClass))
 
 typedef struct {
-  GObject parent;
+  CheckcopyFileHandlerBase parent;
 } CheckcopyPlanner;
 
 typedef struct {

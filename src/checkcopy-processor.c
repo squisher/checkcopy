@@ -28,6 +28,7 @@
 #include "error.h"
 #include "checkcopy-processor.h"
 #include "checkcopy-file-handler.h"
+#include "checkcopy-file-handler-base.h"
 #include "checkcopy-file-info.h"
 #include "checkcopy-file-list.h"
 #include "checkcopy-cancel.h"
@@ -49,9 +50,6 @@ static gboolean copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, 
 
 enum {
   PROP_0,
-  PROP_DESTINATION,
-  PROP_PROGRESS_DIALOG,
-  PROP_VERIFY_ONLY,
 };
 
 
@@ -59,7 +57,7 @@ enum {
 /*- class setup -*/
 /*****************/
 
-G_DEFINE_TYPE_EXTENDED (CheckcopyProcessor, checkcopy_processor, G_TYPE_OBJECT, 0, \
+G_DEFINE_TYPE_EXTENDED (CheckcopyProcessor, checkcopy_processor, CHECKCOPY_TYPE_FILE_HANDLER_BASE, 0, \
                         G_IMPLEMENT_INTERFACE (CHECKCOPY_TYPE_FILE_HANDLER, checkcopy_processor_file_handler_init))
 
 #define GET_PRIVATE(o) \
@@ -68,29 +66,16 @@ G_DEFINE_TYPE_EXTENDED (CheckcopyProcessor, checkcopy_processor, G_TYPE_OBJECT, 
 typedef struct _CheckcopyProcessorPrivate CheckcopyProcessorPrivate;
 
 struct _CheckcopyProcessorPrivate {
-  GFile *dest;
-  ProgressDialog * progress_dialog;
-  CheckcopyFileList * list;
-
-  gboolean verify_only;
+  int dummy;
 };
 
 static void
 checkcopy_processor_get_property (GObject *object, guint property_id,
                               GValue *value, GParamSpec *pspec)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (object));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (object));
 
   switch (property_id) {
-    case PROP_DESTINATION:
-      g_value_set_object (value, priv->dest); 
-      break;
-    case PROP_PROGRESS_DIALOG:
-      g_value_set_object (value, priv->progress_dialog);
-      break;
-    case PROP_VERIFY_ONLY:
-      g_value_set_boolean (value, priv->verify_only);
-      break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -100,18 +85,9 @@ static void
 checkcopy_processor_set_property (GObject *object, guint property_id,
                               const GValue *value, GParamSpec *pspec)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (object));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (object));
 
   switch (property_id) {
-    case PROP_DESTINATION:
-      priv->dest = g_value_dup_object (value); 
-      break;
-    case PROP_PROGRESS_DIALOG:
-      priv->progress_dialog = g_value_dup_object (value);
-      break;
-    case PROP_VERIFY_ONLY:
-      priv->verify_only = g_value_get_boolean (value);
-      break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -127,13 +103,6 @@ checkcopy_processor_class_init (CheckcopyProcessorClass *klass)
   object_class->get_property = checkcopy_processor_get_property;
   object_class->set_property = checkcopy_processor_set_property;
   object_class->finalize = checkcopy_processor_finalize;
-
-  g_object_class_install_property (object_class, PROP_DESTINATION,
-           g_param_spec_object ("destination", _("Destination folder"), _("Destination folder"), G_TYPE_FILE, G_PARAM_READWRITE));
-  g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
-           g_param_spec_object ("progress-dialog", _("Progress dialog"), _("Progress dialog"), TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
-  g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
-           g_param_spec_boolean ("verify-only", _("Only verify"), _("Only verify"), FALSE, G_PARAM_READWRITE));
 }
 
 static void
@@ -146,20 +115,13 @@ checkcopy_processor_file_handler_init (CheckcopyFileHandlerInterface *iface, gpo
 static void
 checkcopy_processor_init (CheckcopyProcessor *self)
 {
-  CheckcopyProcessorPrivate * priv = GET_PRIVATE (self);
-
-  priv->list = checkcopy_file_list_get_instance ();
+  //CheckcopyProcessorPrivate * priv = GET_PRIVATE (self);
 }
 
 static void
 checkcopy_processor_finalize (GObject *obj)
 {
-  CheckcopyProcessor *self = CHECKCOPY_PROCESSOR (obj);
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (self));
-
-  g_object_unref (priv->dest);
-  g_object_unref (priv->progress_dialog);
-  g_object_unref (priv->list);
+  G_OBJECT_CLASS (checkcopy_processor_parent_class)->finalize (obj);
 }
 
 
@@ -171,7 +133,8 @@ checkcopy_processor_finalize (GObject *obj)
 static gssize  
 splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *in, GCancellable *cancellable, GError **error)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
 
   GInputStream *source;
   gssize n_read, n_written;
@@ -205,7 +168,7 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
         {
           n_written = g_output_stream_write (stream, p, n_read, cancellable, error);
 
-          progress_dialog_thread_add_size (priv->progress_dialog, n_written);
+          progress_dialog_thread_add_size (base->progress_dialog, n_written);
 
           if (n_written == -1)
             {
@@ -233,7 +196,8 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
 static void
 process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gchar * relname, gboolean verify_only)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
 
   GCancellable * cancel = checkcopy_get_cancellable ();
   GError *error = NULL;
@@ -260,7 +224,7 @@ process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gcha
   }
 
   if (!had_error) {
-    progress_dialog_thread_add_size (priv->progress_dialog, g_file_info_get_size (info));
+    progress_dialog_thread_add_size (base->progress_dialog, g_file_info_get_size (info));
   }
 }
 
@@ -311,7 +275,8 @@ copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst)
 static gboolean
 verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
 
   gboolean r = TRUE;
   GInputStream *source;
@@ -327,7 +292,7 @@ verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
   do {
     n_read = g_input_stream_read (source, buffer, sizeof (buffer), cancel, &error);
 
-    progress_dialog_thread_add_size (priv->progress_dialog, n_read);
+    progress_dialog_thread_add_size (base->progress_dialog, n_read);
 
     if (n_read == -1) {
       thread_show_gerror (error);
@@ -351,7 +316,8 @@ verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
 static void 
 process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * dst, gchar * relname, gboolean verify_only)
 {
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
 
   GCancellable * cancel = checkcopy_get_cancellable ();
   GError *error = NULL;
@@ -388,7 +354,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
 
     gboolean r;
 
-    checksum_type = checkcopy_file_list_get_file_type (priv->list, relname);
+    checksum_type = checkcopy_file_list_get_file_type (base->list, relname);
     if (checksum_type == CHECKCOPY_NO_CHECKSUM)
       checksum_type = CHECKCOPY_SHA1;
 
@@ -403,7 +369,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
     if (r) {
       checksum = checkcopy_input_stream_get_checksum (cin);
 
-      checkcopy_file_list_check_file (priv->list, relname, checksum, checksum_type);
+      checkcopy_file_list_check_file (base->list, relname, checksum, checksum_type);
     }
 
     g_object_unref (in);
@@ -416,20 +382,20 @@ static void
 process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *info)
 {
   CheckcopyProcessor *proc = CHECKCOPY_PROCESSOR (fhandler);
-  CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
+  CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
 
   gchar *relname;
   GFile *dst = NULL;
-  gboolean verify_only;
 
   relname = g_file_get_relative_path (root, file);
 
-  progress_dialog_thread_set_filename (priv->progress_dialog, relname);
+  progress_dialog_thread_set_filename (base->progress_dialog, relname);
 
-  if (!priv->verify_only) {
-    dst = g_file_resolve_relative_path (priv->dest, relname);
+  if (!base->verify_only) {
+    dst = g_file_resolve_relative_path (base->dest, relname);
   } else {
-    dst = g_object_ref (G_OBJECT (priv->dest));
+    dst = g_object_ref (G_OBJECT (base->dest));
   }
 
 #ifdef DEBUG
@@ -447,10 +413,10 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 #endif
 
   if (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY) {
-    process_directory (proc, info, dst, relname, verify_only);
+    process_directory (proc, info, dst, relname, base->verify_only);
 
   } else {
-    process_file (proc, file, info, dst, relname, verify_only);
+    process_file (proc, file, info, dst, relname, base->verify_only);
   }
 
   g_object_unref (dst);

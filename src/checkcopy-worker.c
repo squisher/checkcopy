@@ -49,7 +49,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 
   progress_dialog = params->progress_dialog;
   planner = checkcopy_planner_new (progress_dialog);
-  proc = checkcopy_processor_new (progress_dialog, params->dest);
+  proc = checkcopy_processor_new (progress_dialog, params->dest, verify_only);
 
   int_q = g_queue_new ();
 

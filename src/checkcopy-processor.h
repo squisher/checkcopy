@@ -24,6 +24,7 @@
 #include <gio/gio.h>
 
 #include "progress-dialog.h"
+#include "checkcopy-file-handler-base.h"
 
 G_BEGIN_DECLS
 
@@ -45,7 +46,7 @@ G_BEGIN_DECLS
   (G_TYPE_INSTANCE_GET_CLASS ((obj), CHECKCOPY_TYPE_PROCESSOR, CheckcopyProcessorClass))
 
 typedef struct {
-  GObject parent;
+  CheckcopyFileHandlerBase parent;
 } CheckcopyProcessor;
 
 typedef struct {
@@ -54,7 +55,7 @@ typedef struct {
 
 GType checkcopy_processor_get_type (void);
 
-CheckcopyProcessor* checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest);
+CheckcopyProcessor* checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest, gboolean verify_only);
 
 G_END_DECLS
 
