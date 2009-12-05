@@ -51,6 +51,7 @@ enum {
   PROP_0,
   PROP_DESTINATION,
   PROP_PROGRESS_DIALOG,
+  PROP_VERIFY_ONLY,
 };
 
 
@@ -70,6 +71,8 @@ struct _CheckcopyProcessorPrivate {
   GFile *dest;
   ProgressDialog * progress_dialog;
   CheckcopyFileList * list;
+
+  gboolean verify_only;
 };
 
 static void
@@ -84,6 +87,9 @@ checkcopy_processor_get_property (GObject *object, guint property_id,
       break;
     case PROP_PROGRESS_DIALOG:
       g_value_set_object (value, priv->progress_dialog);
+      break;
+    case PROP_VERIFY_ONLY:
+      g_value_set_boolean (value, priv->verify_only);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -102,6 +108,9 @@ checkcopy_processor_set_property (GObject *object, guint property_id,
       break;
     case PROP_PROGRESS_DIALOG:
       priv->progress_dialog = g_value_dup_object (value);
+      break;
+    case PROP_VERIFY_ONLY:
+      priv->verify_only = g_value_get_boolean (value);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -123,6 +132,8 @@ checkcopy_processor_class_init (CheckcopyProcessorClass *klass)
            g_param_spec_object ("destination", _("Destination folder"), _("Destination folder"), G_TYPE_FILE, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_PROGRESS_DIALOG,
            g_param_spec_object ("progress-dialog", _("Progress dialog"), _("Progress dialog"), TYPE_PROGRESS_DIALOG, G_PARAM_READWRITE));
+  g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
+           g_param_spec_boolean ("verify-only", _("Only verify"), _("Only verify"), FALSE, G_PARAM_READWRITE));
 }
 
 static void
@@ -415,9 +426,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
   progress_dialog_thread_set_filename (priv->progress_dialog, relname);
 
-  verify_only = g_file_has_uri_scheme (priv->dest, VERIFY_SCHEME);
-
-  if (!verify_only) {
+  if (!priv->verify_only) {
     dst = g_file_resolve_relative_path (priv->dest, relname);
   } else {
     dst = g_object_ref (G_OBJECT (priv->dest));
@@ -459,7 +468,7 @@ get_attribute_list (CheckcopyFileHandler  *fhandler)
 /*******************/
 
 CheckcopyProcessor*
-checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest)
+checkcopy_processor_new (ProgressDialog * progress_dialog, GFile *dest, gboolean verify_only)
 {
-  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "progress-dialog", progress_dialog, "destination", dest, NULL);
+  return g_object_new (CHECKCOPY_TYPE_PROCESSOR, "progress-dialog", progress_dialog, "destination", dest, "verify-only", verify_only, NULL);
 }

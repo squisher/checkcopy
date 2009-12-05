@@ -40,7 +40,12 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   CheckcopyProcessor *proc;
   CheckcopyFileList * list;
 
+  gboolean verify_only;
+
+  verify_only = g_file_has_uri_scheme (params->dest, "verify");
+
   list = checkcopy_file_list_get_instance ();
+  g_object_set (G_OBJECT (list), "verify-only", verify_only, NULL); 
 
   progress_dialog = params->progress_dialog;
   planner = checkcopy_planner_new (progress_dialog);

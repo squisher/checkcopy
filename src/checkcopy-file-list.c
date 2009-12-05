@@ -41,6 +41,7 @@ static GOutputStream * get_checksum_stream (CheckcopyFileList * list, GFile * de
 
 enum {
   PROP_0,
+  PROP_VERIFY_ONLY,
 };
 
 static CheckcopyFileList * singleton = NULL;
@@ -64,6 +65,8 @@ struct _CheckcopyFileListPrivate {
   GHashTable *files_hash;
   GFile * checksum_file;
 
+  gboolean verify_only;
+
   CheckcopyFileListStats stats;
 };
 
@@ -71,9 +74,12 @@ static void
 checkcopy_file_list_get_property (GObject *object, guint property_id,
                               GValue *value, GParamSpec *pspec)
 {
-  //CheckcopyFileListPrivate *priv = GET_PRIVATE (CHECKCOPY_FILE_LIST (object));
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (CHECKCOPY_FILE_LIST (object));
 
   switch (property_id) {
+    case PROP_VERIFY_ONLY:
+      g_value_set_boolean (value, priv->verify_only);
+      break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -83,9 +89,12 @@ static void
 checkcopy_file_list_set_property (GObject *object, guint property_id,
                               const GValue *value, GParamSpec *pspec)
 {
-  //CheckcopyFileListPrivate *priv = GET_PRIVATE (CHECKCOPY_FILE_LIST (object));
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (CHECKCOPY_FILE_LIST (object));
 
   switch (property_id) {
+    case PROP_VERIFY_ONLY:
+      priv->verify_only = g_value_get_boolean (value);
+      break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -109,6 +118,9 @@ checkcopy_file_list_class_init (CheckcopyFileListClass *klass)
   object_class->set_property = checkcopy_file_list_set_property;
   object_class->finalize = checkcopy_file_list_finalize;
   object_class->constructor = checkcopy_file_list_constructor;
+
+  g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
+           g_param_spec_boolean ("verify-only", _("Only verify"), _("Only verify"), FALSE, G_PARAM_READWRITE));
 }
 
 static void
@@ -165,7 +177,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
 
       return NULL;
     } else {
-      return out;
+      return G_OUTPUT_STREAM (out);
     }
   }
 
@@ -420,7 +432,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
 
   cancel = checkcopy_get_cancellable ();
 
-  if (g_file_has_uri_scheme (dest, VERIFY_SCHEME)) {
+  if (priv->verify_only) {
     g_message ("Not writing checksum file because we are only verifying");
     return TRUE;
   }
