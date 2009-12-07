@@ -390,6 +390,13 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
 
   relname = g_file_get_relative_path (root, file);
 
+  if (checkcopy_file_list_get_status (base->list, relname) > CHECKCOPY_STATUS_MARKER_PROCESSED) {
+    DBG ("%s is already processed.", relname);
+    g_free (relname);
+    return;
+  }
+
+
   progress_dialog_thread_set_filename (base->progress_dialog, relname);
 
   if (!base->verify_only) {

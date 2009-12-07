@@ -140,16 +140,24 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (fhandler);
   CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
 
-  priv->size += g_file_info_get_size (info);
+  gchar * relname;
 
-  DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
+  relname = g_file_get_relative_path (root, file);
 
-  g_object_set (base->progress_dialog, "total-size", priv->size, NULL);
+  if (!checkcopy_file_list_is_known (base->list, relname)) {
+    priv->size += g_file_info_get_size (info);
+
+    DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
+
+    g_object_set (base->progress_dialog, "total-size", priv->size, NULL);
 
 
-  if (checkcopy_file_info_is_checksum_file (file)) {
-    checksum_file_list_parse_checksum_file (base->list, root, file);
+    if (checkcopy_file_info_is_checksum_file (file)) {
+      checksum_file_list_parse_checksum_file (base->list, root, file);
+    }
   }
+
+  g_free (relname);
 }
 
 static const gchar *

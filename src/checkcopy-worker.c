@@ -29,10 +29,15 @@
 #include "checkcopy-file-info.h"
 #include "checkcopy-file-list.h"
 
+/* globals */
+
+static GAsyncQueue *ext_q;
+
+/* public */
+
 void
 checkcopy_worker (CheckcopyWorkerParams * params)
 {
-  GAsyncQueue *ext_q;
   GQueue *int_q;
 
   ProgressDialog * progress_dialog;
@@ -115,4 +120,12 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 
   g_object_unref (params->dest);
   g_free (params);
+}
+
+void
+checkcopy_worker_add_file (GFile * file)
+{
+  DBG ("Adding new job");
+
+  g_async_queue_push (ext_q, file);
 }

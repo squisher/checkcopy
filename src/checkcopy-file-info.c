@@ -29,10 +29,10 @@
 /* globals */
 
 static gchar * checksum_type_extensions [] = {
-  ".md5",
-  ".sha",
-  ".sha1",
-  ".sha256",
+  "md5",
+  "sha",
+  "sha1",
+  "sha256",
   "CHECKSUM",
   NULL
 };
@@ -48,16 +48,11 @@ static int checksum_type_lengths [] = {
 static gchar * status_text [] = {
   N_("none"),
   N_("checksum found"),
+  "--marker--",
   N_("verified"),
   N_("FAILED"),
   N_("copied"),
-  /*
-  CHECKCOPY_STATUS_NONE,
-  CHECKCOPY_STATUS_VERIFIABLE,
-  CHECKCOPY_STATUS_VERIFIED,
-  CHECKCOPY_STATUS_VERIFICATION_FAILED,
-  CHECKCOPY_STATUS_COPIED,
-  */
+  "last",
 }; // same order as CheckcopyFileStatus
 
 
@@ -167,6 +162,8 @@ checkcopy_checksum_type_to_gio (CheckcopyChecksumType type)
 
 const gchar * checkcopy_file_status_to_string (CheckcopyFileStatus status)
 {
+  g_assert (status < CHECKCOPY_STATUS_LAST);
+
   return status_text[status];
 }
 

@@ -33,6 +33,8 @@ typedef struct {
 
 void checkcopy_worker (CheckcopyWorkerParams * params) G_GNUC_NORETURN;
 
+void checkcopy_worker_add_file (GFile * file);
+
 G_END_DECLS
 
 #endif /* _HAVE_CHECKCOPY_WORKER */

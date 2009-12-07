@@ -29,6 +29,7 @@
 #include "checkcopy-file-list.h"
 #include "checkcopy-cancel.h"
 #include "error.h"
+#include "checkcopy-worker.h"
 
 /*- private prototypes -*/
 
@@ -270,8 +271,6 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
   parent = g_file_get_parent (file);
   prefix = g_file_get_relative_path (root, parent);
 
-  g_assert (prefix != NULL);
-
   in = g_data_input_stream_new (G_INPUT_STREAM (g_file_read (file, cancel, &error)));
 
   while ((line = g_data_input_stream_read_line (in,
@@ -315,7 +314,7 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
 
       /* rest of the line is the file name */
 
-      if (*prefix != '\0')
+      if (prefix != NULL && *prefix != '\0')
         filename = g_strconcat (prefix, G_DIR_SEPARATOR_S, c, NULL);
       else
         filename = g_strdup (c);
@@ -334,15 +333,33 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
         DBG ("Parsed checksum for %s", info->relname);
 
         g_hash_table_insert (priv->files_hash, info->relname, info);
+
+        if (priv->verify_only) {
+          checkcopy_worker_add_file (g_file_resolve_relative_path (root, filename));
+        }
       } else {
-        /* We already have a checksum for this file. This is a bit odd.
-         * Check if it matches with the previous one, otherwise note
-         * an error */
+        /* We saw the file before the checksum.
+         *
+         * Verify it now.
+         */
+
+        DBG ("%s was copied already, verifying it immediately", filename);
 
         if (!g_str_equal (info->checksum, checksum)) {
-          /* TODO: add to error list */
+          /* Verification failed. We want to display the checksum 
+           * the file is supposed to have in the gui, so switch
+           * the two variables.
+           */
+          gchar * ts;
 
-          g_warning ("Previous checksum for %s was %s, now encountered %s", filename, info->checksum, checksum);
+          ts = info->checksum;
+          info->checksum = checksum;
+          checksum = ts;
+
+          /* TODO: display the checksum which the file actually has */
+          g_free (checksum);
+
+          info->status = CHECKCOPY_STATUS_VERIFICATION_FAILED;
         }
       }
     }
@@ -356,6 +373,29 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
   g_input_stream_close (G_INPUT_STREAM (in), cancel, &error);
 
   return n;
+}
+
+gboolean
+checkcopy_file_list_is_known (CheckcopyFileList * list, gchar *relname)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  return g_hash_table_lookup (priv->files_hash, relname) != NULL;
+}
+
+CheckcopyFileStatus
+checkcopy_file_list_get_status (CheckcopyFileList * list, gchar *relname)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+  CheckcopyFileInfo *info;
+  
+  info = g_hash_table_lookup (priv->files_hash, relname);
+
+  /* at this point the relname should be known, since the planner has seen it */
+  if (info == NULL)
+    return CHECKCOPY_STATUS_NONE;
+
+  return info->status;
 }
 
 CheckcopyChecksumType
