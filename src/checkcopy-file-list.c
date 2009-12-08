@@ -172,7 +172,7 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
     out = g_file_append_to (priv->checksum_file, 0, cancel, &error);
 
     if (!out || error) {
-      thread_show_gerror (error);
+      thread_show_gerror (dest, error);
       g_error_free (error);
       error = NULL;
 
@@ -525,7 +525,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
       }
 
       if (error) {
-        thread_show_gerror (error);
+        thread_show_gerror (dest, error);
         g_error_free (error);
         error = NULL;
         g_free (line);
@@ -540,7 +540,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
       g_output_stream_close (out, cancel, &error);
 
     if (error) {
-      thread_show_gerror (error);
+      thread_show_gerror (dest, error);
       g_error_free (error);
       error = NULL;
     }

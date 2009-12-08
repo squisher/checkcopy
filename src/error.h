@@ -36,9 +36,9 @@ void show_error_full (gchar * file, gint line, gboolean abortable, char *fmt, ..
 #define thread_show_error(fmt, args...) \
   thread_show_error_full (__FILE__, __LINE__, (fmt), ## args)
 void thread_show_error_full (gchar * file, gint line, char *fmt, ...);
-#define thread_show_gerror(error) \
-  thread_show_gerror_full (__FILE__, __LINE__, (error))
-void thread_show_gerror_full (gchar * file, gint line, GError *error);
+#define thread_show_gerror(file, error) \
+  thread_show_gerror_full (__FILE__, __LINE__, (file), (error))
+void thread_show_gerror_full (gchar * srcfile, gint line, GFile * file, GError *error);
 
 gboolean error_has_occurred ();
 GQuark checkcopy_error_quark ();

@@ -43,7 +43,7 @@ static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 
 static void process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gchar * relname, gboolean verify_only);
 static void process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * dst, gchar * relname, gboolean verify_only);
-static gboolean verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin);
+static gboolean verify_file (CheckcopyProcessor *proc, GFile * file, CheckcopyInputStream *cin);
 static gboolean copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst);
 
 /*- globals -*/
@@ -217,7 +217,7 @@ process_directory (CheckcopyProcessor *proc, GFileInfo * info, GFile * dst, gcha
     if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
       /* not an error */
     } else {
-      thread_show_gerror (error);
+      thread_show_gerror (dst, error);
       g_error_free (error);
       had_error = TRUE;
     }
@@ -244,7 +244,7 @@ copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst)
     out = G_OUTPUT_STREAM (g_file_replace (dst, NULL, FALSE, 0, cancel, &error));
 
   if (out == NULL || error) {
-    thread_show_gerror (error);
+    thread_show_gerror (dst, error);
     g_error_free (error);
     error = NULL;
 
@@ -256,7 +256,7 @@ copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst)
       splice (proc, out, cin, cancel, &error);
 
     if (error) {
-      thread_show_gerror (error);
+      thread_show_gerror (dst, error);
       g_error_free (error);
       error = NULL;
 
@@ -273,7 +273,7 @@ copy_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin, GFile * dst)
 
 
 static gboolean
-verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
+verify_file (CheckcopyProcessor *proc, GFile * file, CheckcopyInputStream *cin)
 {
   //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
   CheckcopyFileHandlerBase *base = CHECKCOPY_FILE_HANDLER_BASE (proc);
@@ -295,7 +295,7 @@ verify_file (CheckcopyProcessor *proc, CheckcopyInputStream *cin)
     progress_dialog_thread_add_size (base->progress_dialog, n_read);
 
     if (n_read == -1) {
-      thread_show_gerror (error);
+      thread_show_gerror (file, error);
       g_error_free (error);
       error = NULL;
 
@@ -345,7 +345,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
     in = G_INPUT_STREAM (g_file_read (file, cancel, &error));
 
   if (in == NULL || error) {
-    thread_show_gerror (error);
+    thread_show_gerror (file, error);
     g_error_free (error);
     error = NULL;
 
@@ -361,7 +361,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
     cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (checksum_type));
 
     if (verify_only) {
-      r = verify_file (proc, cin);
+      r = verify_file (proc, file, cin);
     } else {
       r = copy_file (proc, cin, dst);
     }

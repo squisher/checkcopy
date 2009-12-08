@@ -64,7 +64,14 @@ show_verror (gchar * file, gint line, gboolean abortable, char *fmt, va_list ap)
     GtkButtonsType buttons_type;
 
     if (abortable) {
-      buttons_type = GTK_BUTTONS_OK_CANCEL;
+      gchar * tmpstr = msg;
+      
+      buttons_type = GTK_BUTTONS_YES_NO;
+      
+      msg = g_strdup_printf ("%s\n\n%s", tmpstr, _("Would you like to abort?"));
+      
+      g_free (tmpstr);
+      
       DBG ("Creating abortable error dialog");
     } else {
       buttons_type = GTK_BUTTONS_OK;
@@ -81,13 +88,16 @@ show_verror (gchar * file, gint line, gboolean abortable, char *fmt, va_list ap)
       case GTK_RESPONSE_DELETE_EVENT:
         if (!abortable)
           break;
-      case GTK_RESPONSE_CANCEL:
+        // else fall through
+      case GTK_RESPONSE_YES:
         {
           GCancellable *cancel;
 
           cancel = checkcopy_get_cancellable ();
           g_cancellable_cancel (cancel);
         }
+        break;
+      case GTK_RESPONSE_NO:
         break;
       default:
         g_critical ("Invalid dialog response");
@@ -134,7 +144,7 @@ thread_show_error_full (gchar * file, gint line, char *fmt, ...)
 }
 
 void 
-thread_show_gerror_full (gchar * file, gint line, GError *error)
+thread_show_gerror_full (gchar * srcfile, gint line, GFile * file, GError *error)
 {
   g_assert (error != NULL);
 
@@ -142,7 +152,19 @@ thread_show_gerror_full (gchar * file, gint line, GError *error)
     return;
 
   gdk_threads_enter ();
-  show_error_full (file, line, TRUE, "%s", error->message);
+  
+  if (file != NULL) {
+    gchar * fn;
+  
+    fn = g_file_get_uri (file);
+   
+    show_error_full (srcfile, line, TRUE, "%s\n%s", fn, error->message);
+    
+    g_free (fn);
+  } else {
+    show_error_full (srcfile, line, TRUE, "%s", error->message);
+  }
+  
   gdk_threads_leave ();
 }
 

@@ -99,7 +99,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
       } /* if iter */
 
       if (error && *error) {
-        thread_show_gerror (*error);
+        thread_show_gerror (file, *error);
         g_error_free (*error);
         *error = NULL;
         done = FALSE;
