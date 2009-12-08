@@ -72,7 +72,7 @@ void progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar *
 guint64 progress_dialog_thread_get_current_size (ProgressDialog * dialog);
 void progress_dialog_thread_set_done (ProgressDialog * dialog);
 
-ProgressDialog * progress_dialog_new ();
+ProgressDialog * progress_dialog_new (gboolean verify_only);
 
 G_END_DECLS
 

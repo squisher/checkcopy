@@ -41,8 +41,6 @@
 
 #define BORDER 10
 #define BUF_SIZE 8192
-#define PROGRESS_UPDATE_NUM 5
-#define MIN_BLOCKS_PER_UPDATE 4
 #define MAX_FILENAME_LEN 80
 
 #define PROGRESS_DIALOG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_PROGRESS_DIALOG, ProgressDialogPrivate))
@@ -72,6 +70,7 @@ typedef struct
   guint idle_tag;
 
   ProgressDialogStatus status;
+  gboolean verify_only;
 } ProgressDialogPrivate;
 
 
@@ -106,6 +105,7 @@ enum
   PROP_0,
   PROP_STATUS,
   PROP_SIZE,
+  PROP_VERIFY_ONLY,
 };
 
 /*                                    */
@@ -176,16 +176,14 @@ progress_dialog_class_init (ProgressDialogClass * klass)
 
   /* properties */
   g_object_class_install_property (object_class, PROP_STATUS,
-                                   g_param_spec_enum ("status", N_("Status"), N_("Status"), TYPE_PROGRESS_DIALOG_STATUS,
+                                   g_param_spec_enum ("status", _("Status"), _("Status"), TYPE_PROGRESS_DIALOG_STATUS,
                                                       PROGRESS_DIALOG_STATUS_INIT, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_SIZE,
-                                   g_param_spec_uint64 ("total-size", N_("Total Size"), N_("Size of the whole operation"),
+                                   g_param_spec_uint64 ("total-size", _("Total Size"), _("Size of the whole operation"),
                                                          0, -1, 0, G_PARAM_READWRITE)); 
-  /*
-  g_object_class_install_property (object_class, PROP_ANIMATE,
-                                   g_param_spec_boolean ("animate", "Show an animation", "Show an animation",
+  g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
+                                   g_param_spec_boolean ("verify-only", _("Verify only"), _("Verification only mode"),
                                                          FALSE, G_PARAM_READWRITE));
-  */
 }
 
 static void
@@ -337,6 +335,9 @@ progress_dialog_get_property (GObject * object, guint prop_id, GValue * value, G
   case PROP_SIZE:
     g_value_set_uint64 (value, priv->total_size);
     break;
+  case PROP_VERIFY_ONLY:
+    g_value_set_boolean (value, priv->verify_only);
+    break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     break;
@@ -357,6 +358,9 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
     priv->total_size =  g_value_get_uint64(value);
 
     priv->bytes_per_percent = priv->total_size / 100;
+    break;
+  case PROP_VERIFY_ONLY:
+    priv->verify_only = g_value_get_boolean (value);
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -745,10 +749,10 @@ progress_dialog_thread_set_done (ProgressDialog * dialog)
 
 /* constructor */
 ProgressDialog *
-progress_dialog_new (void)
+progress_dialog_new (gboolean verify_only)
 {
   ProgressDialog *obj;
-  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, NULL));
+  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "verify-only", verify_only));
     
   return obj;
 }

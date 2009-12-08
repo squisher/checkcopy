@@ -127,6 +127,7 @@ main (int argc, char *argv[])
   GAsyncQueue * queue;
   CheckcopyWorkerParams *worker_params;
   int i;
+  gboolean verify_only = FALSE;
 
 #if 0
 #if DEBUG > 0
@@ -180,6 +181,7 @@ main (int argc, char *argv[])
     dest_folder = g_file_new_for_commandline_arg (dest);
 
     if (g_file_has_uri_scheme (dest_folder, "verify")) {
+      verify_only = TRUE;
       g_message ("Verification-only mode");
     }
   }
@@ -197,7 +199,7 @@ main (int argc, char *argv[])
 #endif
 
   /* show the progress dialog */
-  progress_dialog = progress_dialog_new ();
+  progress_dialog = progress_dialog_new (verify_only);
   gtk_widget_show (GTK_WIDGET (progress_dialog));
 
   /* prepare the worker thread */
