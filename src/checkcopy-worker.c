@@ -94,6 +94,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 #endif
 
     progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COPYING);
+    g_object_set (G_OBJECT (progress_dialog), "num-files", checkcopy_planner_get_num_files (planner), NULL);
 
     /* Now process the internal queue */
     while ((file = g_queue_pop_head (int_q)) != NULL) {

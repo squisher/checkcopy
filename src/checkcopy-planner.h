@@ -54,6 +54,7 @@ typedef struct {
 
 GType checkcopy_planner_get_type (void);
 
+guint checkcopy_planner_get_num_files (CheckcopyPlanner * planner);
 CheckcopyPlanner* checkcopy_planner_new (ProgressDialog * progress_dialog);
 
 G_END_DECLS

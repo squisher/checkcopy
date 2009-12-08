@@ -42,6 +42,7 @@ static const gchar * get_attribute_list (CheckcopyFileHandler  *fhandler);
 enum {
   PROP_0,
   PROP_TOTAL_SIZE,
+  PROP_NUM_FILES,
 };
 
 
@@ -59,6 +60,7 @@ typedef struct _CheckcopyPlannerPrivate CheckcopyPlannerPrivate;
 
 struct _CheckcopyPlannerPrivate {
   goffset size;
+  guint num_files;
 };
 
 static void
@@ -70,6 +72,9 @@ checkcopy_planner_get_property (GObject *object, guint property_id,
   switch (property_id) {
     case PROP_TOTAL_SIZE:
       g_value_set_int64 (value, priv->size);
+      break;
+    case PROP_NUM_FILES:
+      g_value_set_uint (value, priv->num_files);
       break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -104,6 +109,8 @@ checkcopy_planner_class_init (CheckcopyPlannerClass *klass)
 
   g_object_class_install_property (object_class, PROP_TOTAL_SIZE,
            g_param_spec_int64 ("total-size", _("Total size"), _("Total size"), 0, G_MAXINT64, 0, G_PARAM_READABLE));
+  g_object_class_install_property (object_class, PROP_NUM_FILES,
+           g_param_spec_uint ("num-files", _("Number of files"), _("Number of files"), 0, G_MAXUINT, 0, G_PARAM_READABLE));
 }
 
 static void
@@ -145,6 +152,11 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   relname = g_file_get_relative_path (root, file);
 
   if (!checkcopy_file_list_is_known (base->list, relname)) {
+
+    if (g_file_info_get_file_type (info) != G_FILE_TYPE_DIRECTORY) {
+      priv->num_files++;
+    }
+
     priv->size += g_file_info_get_size (info);
 
     DBG ("After %s, total size is %llu", g_file_info_get_display_name (info), priv->size);
@@ -169,6 +181,14 @@ get_attribute_list (CheckcopyFileHandler *fhandler)
 /*******************/
 /*- public methods-*/
 /*******************/
+
+guint
+checkcopy_planner_get_num_files (CheckcopyPlanner * planner)
+{
+  CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
+
+  return priv->num_files;
+}
 
 CheckcopyPlanner*
 checkcopy_planner_new (ProgressDialog * progress_dialog)
