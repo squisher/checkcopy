@@ -91,7 +91,7 @@ static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer d
 static gboolean cb_update_progress (gpointer data);
 static void set_update (ProgressDialog * dialog, gboolean enabled);
 
-static GtkWidget * stats_label_new (const gchar * tooltip, GtkWidget *label, const gchar * color_str);
+static GtkWidget * stats_label_new (const gchar * tooltip, GtkWidget *label);
 static void update_progress (ProgressDialog * dialog);
 static void progress_dialog_add_size (ProgressDialog * dialog, guint64 size);
 static gboolean progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status);
@@ -186,7 +186,8 @@ progress_dialog_class_init (ProgressDialogClass * klass)
                                    g_param_spec_boolean ("verify-only", _("Verify only"), _("Verification only mode"),
                                                          FALSE, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_NUM_FILES,
-                                   g_param_spec_uint ("num-files", _("Number of files"), _("Number of files"), 0, G_MAXUINT, 0, G_PARAM_WRITABLE));
+                                   g_param_spec_uint ("num-files", _("Number of files"), _("Number of files"),
+                                   0, G_MAXUINT, 0, G_PARAM_WRITABLE));
 
 }
 
@@ -267,7 +268,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_total = entry = stats_label_new (_("Total number of files"), label, NULL);
+  priv->entry_total = entry = stats_label_new (_("Total number of files"), label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -276,7 +277,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_copied = entry = stats_label_new (_("Number of files which were copied successfully but not verified by a checksum"), label, NULL);
+  priv->entry_copied = entry = stats_label_new (_("Number of files which were copied successfully but not verified by a checksum"), label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -285,7 +286,8 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_verified = entry = stats_label_new (_("Number of files which were copied and verified successfully"), label, NULL);
+  priv->entry_verified = entry = stats_label_new (_("Number of files which were copied and verified successfully"),
+                                                  label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -294,7 +296,8 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_failed = entry = stats_label_new (_("Number of files which failed copying and/or verification"), label, NULL);
+  priv->entry_failed = entry = stats_label_new (_("Number of files which failed copying and/or verification"),
+                                                label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -379,7 +382,7 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
   case PROP_NUM_FILES:
     {
       gchar *s;
-      s = g_strdup_printf ("%d", g_value_get_uint (value));
+      s = g_strdup_printf ("%4d", g_value_get_uint (value));
       gtk_entry_set_text (GTK_ENTRY (priv->entry_total), s);
       g_free (s);
     }
@@ -439,10 +442,9 @@ progress_dialog_add_size (ProgressDialog * dialog, guint64 size)
 }
 
 static GtkWidget *
-stats_label_new (const gchar * tooltip, GtkWidget *label, const gchar * color_str)
+stats_label_new (const gchar * tooltip, GtkWidget *label)
 {
   GtkWidget * entry;
-  GdkColor color;
 
   entry = gtk_entry_new ();
 
@@ -451,11 +453,6 @@ stats_label_new (const gchar * tooltip, GtkWidget *label, const gchar * color_st
                                   "has-frame", TRUE,
                                   "shadow-type", GTK_SHADOW_NONE,
                                   NULL);
-
-  if (color_str != NULL) {
-    gdk_color_parse (color_str, &color);
-    gtk_widget_modify_text (entry, GTK_STATE_NORMAL, &color);
-  }
 
   gtk_widget_set_tooltip_text (label, tooltip);
   gtk_widget_set_tooltip_text (entry, tooltip);
@@ -546,17 +543,27 @@ update_stat_labels (ProgressDialog * dialog)
   const CheckcopyFileListStats * stats;
   gchar *s;
   const gchar fmt[] = "%4d";
+  GdkColor color;
+  const gchar * color_str;
 
   stats = checkcopy_file_list_get_stats (priv->list);
 
   s = g_strdup_printf (fmt, stats->copied);
   gtk_entry_set_text (GTK_ENTRY (priv->entry_copied), s);
   g_free (s);
-
+ 
+  if (stats->verified > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFIED)) != NULL) {
+    gdk_color_parse (color_str, &color);
+    gtk_widget_modify_base (priv->entry_verified, GTK_STATE_NORMAL, &color);
+  }
   s = g_strdup_printf (fmt, stats->verified);
   gtk_entry_set_text (GTK_ENTRY (priv->entry_verified), s);
   g_free (s);
 
+  if (stats->failed > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFICATION_FAILED)) != NULL) {
+    gdk_color_parse (color_str, &color);
+    gtk_widget_modify_base (priv->entry_failed, GTK_STATE_NORMAL, &color);
+  }
   s = g_strdup_printf (fmt, stats->failed);
   gtk_entry_set_text (GTK_ENTRY (priv->entry_failed), s);
   g_free (s);

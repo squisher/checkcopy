@@ -34,7 +34,7 @@ static gchar * checksum_type_extensions [] = {
   "sha1",
   "sha256",
   "CHECKSUM",
-  NULL
+  NULL /* last */
 };
 
 static int checksum_type_lengths [] = {
@@ -52,9 +52,18 @@ static gchar * status_text [] = {
   N_("verified"),
   N_("FAILED"),
   N_("copied"),
-  "last",
+  "last"
 }; // same order as CheckcopyFileStatus
 
+static const gchar * status_color [] = {
+  NULL,
+  NULL,
+  NULL, /* --marker-- */
+  "#22ee44",
+  "#ee4422",
+  NULL,
+  NULL /* last */
+};
 
 /* internals */
 
@@ -165,6 +174,13 @@ const gchar * checkcopy_file_status_to_string (CheckcopyFileStatus status)
   g_assert (status < CHECKCOPY_STATUS_LAST);
 
   return status_text[status];
+}
+
+const gchar * checkcopy_file_info_status_color (CheckcopyFileStatus status)
+{
+  g_assert (status < CHECKCOPY_STATUS_LAST);
+
+  return status_color[status];
 }
 
 const gchar *

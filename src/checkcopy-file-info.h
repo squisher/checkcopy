@@ -62,6 +62,7 @@ gssize checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** l
 gint checkcopy_file_info_cmp (CheckcopyFileInfo *infoa, CheckcopyFileInfo *infob);
 const gchar * checkcopy_file_status_to_string (CheckcopyFileStatus status);
 const gchar * checkcopy_file_info_status_text (CheckcopyFileInfo *info);
+const gchar * checkcopy_file_info_status_color (CheckcopyFileStatus status);
 
 G_END_DECLS
 

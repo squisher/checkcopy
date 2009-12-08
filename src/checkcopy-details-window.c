@@ -243,18 +243,9 @@ display_list (CheckcopyDetailsWindow * details, GList *file_infos)
 static void
 set_color (GtkCellRenderer *renderer, CheckcopyFileStatus status)
 {
-  gchar *color = NULL;
-
-  switch (status) {
-    case CHECKCOPY_STATUS_VERIFICATION_FAILED:
-      color = "#ee4422";
-      break;
-    case CHECKCOPY_STATUS_VERIFIED:
-      color = "#22ee44";
-      break;
-    default:
-      break;
-  }
+  const gchar * color;
+  
+  color = checkcopy_file_info_status_color (status);
 
   if (color) {
     g_object_set (G_OBJECT (renderer), "background", color, "background-set", TRUE, NULL);
