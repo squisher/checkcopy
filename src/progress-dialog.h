@@ -71,6 +71,9 @@ gboolean progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDia
 void progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn);
 guint64 progress_dialog_thread_get_current_size (ProgressDialog * dialog);
 void progress_dialog_thread_set_done (ProgressDialog * dialog);
+#ifdef DEBUG
+gboolean progress_dialog_thread_check_stats (ProgressDialog * dialog);
+#endif
 
 ProgressDialog * progress_dialog_new (gboolean verify_only);
 

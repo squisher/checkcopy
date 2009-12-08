@@ -60,6 +60,9 @@ typedef struct
 
   guint64 total_size;
   guint64 curr_size;
+#ifdef DEBUG
+  guint num_files;
+#endif
   gint i;
 
   gssize bytes_per_percent;
@@ -170,7 +173,7 @@ progress_dialog_class_init (ProgressDialogClass * klass)
   parent_class = g_type_class_peek_parent (klass);
 
   g_type_class_add_private (klass, sizeof (ProgressDialogPrivate));
-  
+
   object_class->get_property = progress_dialog_get_property;
   object_class->set_property = progress_dialog_set_property;
   object_class->finalize = progress_dialog_finalize;
@@ -181,7 +184,7 @@ progress_dialog_class_init (ProgressDialogClass * klass)
                                                       PROGRESS_DIALOG_STATUS_INIT, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_SIZE,
                                    g_param_spec_uint64 ("total-size", _("Total Size"), _("Size of the whole operation"),
-                                                         0, -1, 0, G_PARAM_READWRITE)); 
+                                                         0, -1, 0, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
                                    g_param_spec_boolean ("verify-only", _("Verify only"), _("Verification only mode"),
                                                          FALSE, G_PARAM_READWRITE));
@@ -227,7 +230,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_progress_bar_set_pulse_step (GTK_PROGRESS_BAR (priv->progress_bar), 0.05);
 
   /* file label */
-  
+
   priv->file_label = gtk_label_new ("...");
   gtk_misc_set_alignment (GTK_MISC (priv->file_label), 0.1, 0.0);
   gtk_label_set_justify (GTK_LABEL (priv->file_label), GTK_JUSTIFY_LEFT);
@@ -314,7 +317,7 @@ progress_dialog_init (ProgressDialog * obj)
   g_signal_connect (G_OBJECT (priv->button_close), "clicked", G_CALLBACK (cb_close_clicked), obj);
 
   gtk_widget_show (GTK_WIDGET (vbox));
-  
+
 
   g_signal_connect (G_OBJECT (obj), "delete-event", G_CALLBACK (cb_delete), NULL);
 
@@ -386,6 +389,9 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
       gtk_entry_set_text (GTK_ENTRY (priv->entry_total), s);
       g_free (s);
     }
+#ifdef DEBUG
+    priv->num_files = g_value_get_uint (value);
+#endif
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -410,7 +416,7 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
 
     if (tv.tv_sec != 0)
       per_sec = priv->total_size / tv.tv_sec;
-    else { 
+    else {
       per_sec = priv->total_size;
       if (tv.tv_usec >= G_USEC_PER_SEC / 2)
         tv.tv_sec = 1;
@@ -429,8 +435,8 @@ set_action_text (ProgressDialog * dialog, ProgressDialogStatus status, const gch
 
   gtk_label_set_markup (GTK_LABEL (priv->status_label), temp);
 
-  g_free (temp);  
-  g_free (text_time);  
+  g_free (temp);
+  g_free (text_time);
 }
 
 static void
@@ -518,7 +524,7 @@ update_progress (ProgressDialog * dialog)
   }
 }
 
-static void 
+static void
 progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
@@ -531,7 +537,7 @@ progress_dialog_set_filename (ProgressDialog * dialog, const gchar * fn)
     truncated = g_strdup_printf ("...%s", fn + (len - MAX_FILENAME_LEN));
     gtk_label_set_text (GTK_LABEL (priv->file_label), truncated);
     g_free (truncated);
-  } else 
+  } else
     gtk_label_set_text (GTK_LABEL (priv->file_label), fn);
 }
 
@@ -551,7 +557,7 @@ update_stat_labels (ProgressDialog * dialog)
   s = g_strdup_printf (fmt, stats->copied);
   gtk_entry_set_text (GTK_ENTRY (priv->entry_copied), s);
   g_free (s);
- 
+
   if (stats->verified > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFIED)) != NULL) {
     gdk_color_parse (color_str, &color);
     gtk_widget_modify_base (priv->entry_verified, GTK_STATE_NORMAL, &color);
@@ -702,7 +708,7 @@ progress_dialog_set_status (ProgressDialog * dialog, ProgressDialogStatus status
 
   if (status == PROGRESS_DIALOG_STATUS_COMPLETED) {
     //g_debug ("size = %llu / %llu", priv->curr_size, priv->total_size);
-    
+
     progress_dialog_set_filename (dialog, "");
     set_action_text (dialog, status, _("Done."));
     gtk_button_set_label (GTK_BUTTON (priv->button_close), GTK_STOCK_CLOSE);
@@ -752,7 +758,7 @@ progress_dialog_thread_set_status (ProgressDialog * dialog, ProgressDialogStatus
   return ret;
 }
 
-void 
+void
 progress_dialog_thread_set_filename (ProgressDialog * dialog, const gchar * fn)
 {
   gdk_threads_enter ();
@@ -777,7 +783,7 @@ void
 progress_dialog_thread_set_done (ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
-  
+
   /* reset the status to force moving it to complete */
   priv->status = PROGRESS_DIALOG_STATUS_COPYING;
 
@@ -786,12 +792,42 @@ progress_dialog_thread_set_done (ProgressDialog * dialog)
   gdk_threads_leave ();
 }
 
+#ifdef DEBUG
+gboolean
+progress_dialog_thread_check_stats (ProgressDialog * dialog)
+{
+  ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
+
+  if (priv->status == PROGRESS_DIALOG_STATUS_COMPLETED) {
+    guint stats_total;
+    const CheckcopyFileListStats * stats;
+
+    stats = checkcopy_file_list_get_stats (priv->list);
+
+    stats_total = stats->copied + stats->failed + stats->verified;
+
+    if (stats_total != priv->num_files) {
+      g_warning ("Total number of files is %u, but stats were recorded for only %u",
+                 priv->num_files, stats_total);
+      return FALSE;
+    } else {
+      DBG ("Number of files and sum of stats matched up");
+      return TRUE;
+    }
+  }
+
+  /* Any other status cannot be verified */
+
+  return TRUE;
+}
+#endif
+
 /* constructor */
 ProgressDialog *
 progress_dialog_new (gboolean verify_only)
 {
   ProgressDialog *obj;
   obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "verify-only", verify_only));
-    
+
   return obj;
 }

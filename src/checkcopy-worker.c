@@ -50,7 +50,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   verify_only = g_file_has_uri_scheme (params->dest, "verify");
 
   list = checkcopy_file_list_get_instance ();
-  g_object_set (G_OBJECT (list), "verify-only", verify_only, NULL); 
+  g_object_set (G_OBJECT (list), "verify-only", verify_only, NULL);
 
   progress_dialog = params->progress_dialog;
   planner = checkcopy_planner_new (progress_dialog);
@@ -59,7 +59,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
   int_q = g_queue_new ();
 
   ext_q = params->queue;
-  
+
   g_async_queue_ref (ext_q);
 
   while (TRUE) {
@@ -67,7 +67,7 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 
     /* Collect everything from the external queue to calculate the size.
      * Since the files are not processed yet, stick them into the internal queue.
-     * 
+     *
      * At this point the internal queue is empty, so we can block once for getting the first item
      * from the external queue
     */
@@ -104,6 +104,10 @@ checkcopy_worker (CheckcopyWorkerParams * params)
 
     checkcopy_file_list_write_checksum (list, params->dest);
     progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
+
+#ifdef DEBUG
+    progress_dialog_thread_check_stats (progress_dialog);
+#endif
 
     DBG ("Waiting for more things to do");
   }
