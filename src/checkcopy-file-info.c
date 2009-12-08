@@ -50,8 +50,9 @@ static gchar * status_text [] = {
   N_("checksum found"),
   "--marker--",
   N_("verified"),
-  N_("FAILED"),
   N_("copied"),
+  N_("FAILED"),
+  N_("FAILED"),
   "last"
 }; // same order as CheckcopyFileStatus
 
@@ -60,8 +61,9 @@ static const gchar * status_color [] = {
   NULL,
   NULL, /* --marker-- */
   "#22ee44",
-  "#ee4422",
   NULL,
+  "#ee4422",
+  "#ee4422",
   NULL /* last */
 };
 
@@ -76,7 +78,7 @@ checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** line)
   GString * string;
 
   g_assert (line != NULL);
-  
+
   if (!info->relname || !info->checksum) {
     *line = NULL;
     return 0;
@@ -91,7 +93,7 @@ checkcopy_file_info_format_checksum (CheckcopyFileInfo * info, gchar ** line)
 
   g_string_free (string, FALSE);
 
-  return len; 
+  return len;
 }
 
 gint

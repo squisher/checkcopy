@@ -1,21 +1,21 @@
 /* checkcopy-file-list.c */
 /*
  *  Copyright (C) 2009 David Mohr <david@mcbf.net>
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Library General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -151,7 +151,7 @@ checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectCo
 /*- internals -*/
 /***************/
 
-static GOutputStream * 
+static GOutputStream *
 get_checksum_stream (CheckcopyFileList * list, GFile * dest)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
@@ -346,7 +346,7 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
         DBG ("%s was copied already, verifying it immediately", filename);
 
         if (!g_str_equal (info->checksum, checksum)) {
-          /* Verification failed. We want to display the checksum 
+          /* Verification failed. We want to display the checksum
            * the file is supposed to have in the gui, so switch
            * the two variables.
            */
@@ -388,7 +388,7 @@ checkcopy_file_list_get_status (CheckcopyFileList * list, gchar *relname)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
   CheckcopyFileInfo *info;
-  
+
   info = g_hash_table_lookup (priv->files_hash, relname);
 
   /* at this point the relname should be known, since the planner has seen it */
@@ -424,7 +424,7 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
   if (info == NULL) {
     /* We have not seen a checksum for this file yet.
      * Record the checksum we just calculated */
-    
+
     DBG ("%s had no checksum, recording %s", relname, checksum);
 
     info = g_new0 (CheckcopyFileInfo, 1);
@@ -458,6 +458,26 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
   }
 
   return info->status;
+}
+
+void
+checkcopy_file_list_mark_failed (CheckcopyFileList * list, gchar * relname)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+  CheckcopyFileInfo *info;
+
+  info = g_hash_table_lookup (priv->files_hash, relname);
+
+  if (info == NULL) {
+    info = g_new0 (CheckcopyFileInfo, 1);
+    info->relname = g_strdup (relname);
+
+    g_hash_table_insert (priv->files_hash, relname, info);
+  }
+
+  info->status = CHECKCOPY_STATUS_FAILED;
+
+  priv->stats.failed++;
 }
 
 gboolean

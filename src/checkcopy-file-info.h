@@ -22,14 +22,15 @@
 
 G_BEGIN_DECLS
 
-/* Keep status_text in sync with this enum! */
+/* Keep status_text and status_color in sync with this enum! */
 typedef enum {
   CHECKCOPY_STATUS_NONE,
   CHECKCOPY_STATUS_VERIFIABLE,
   CHECKCOPY_STATUS_MARKER_PROCESSED,
   CHECKCOPY_STATUS_VERIFIED,
-  CHECKCOPY_STATUS_VERIFICATION_FAILED,
   CHECKCOPY_STATUS_COPIED,
+  CHECKCOPY_STATUS_VERIFICATION_FAILED,
+  CHECKCOPY_STATUS_FAILED,
   CHECKCOPY_STATUS_LAST,
 } CheckcopyFileStatus;
 
@@ -37,7 +38,7 @@ typedef enum {
   CHECKCOPY_MD5,
   CHECKCOPY_SHA1,
   CHECKCOPY_SHA256,
-  CHECKCOPY_NO_CHECKSUM, /* Has to be the last, so the order can 
+  CHECKCOPY_NO_CHECKSUM, /* Has to be the last, so the order can
                             match checksum_type_extensions */
 } CheckcopyChecksumType;
 

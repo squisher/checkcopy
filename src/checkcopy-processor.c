@@ -1,20 +1,20 @@
 /*
  *  Copyright (C) 2009 David Mohr <david@mcbf.net>
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Library General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -130,7 +130,7 @@ checkcopy_processor_finalize (GObject *obj)
 /***************/
 
 /* this function is based on g_output_stream_splice */
-static gssize  
+static gssize
 splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *in, GCancellable *cancellable, GError **error)
 {
   //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
@@ -149,9 +149,9 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
   source = G_INPUT_STREAM (in);
 
   bytes_copied = 0;
-  
+
   res = TRUE;
-  do 
+  do
     {
       n_read = g_input_stream_read (source, buffer, sizeof (buffer), cancellable, error);
       if (n_read == -1)
@@ -159,7 +159,7 @@ splice (CheckcopyProcessor *proc, GOutputStream *stream, CheckcopyInputStream *i
           res = FALSE;
           break;
         }
-  
+
       if (n_read == 0)
         break;
 
@@ -301,7 +301,7 @@ verify_file (CheckcopyProcessor *proc, GFile * file, CheckcopyInputStream *cin)
 
       r = FALSE;
     }
-    
+
     if (n_read == 0) {
       break;
     }
@@ -313,7 +313,7 @@ verify_file (CheckcopyProcessor *proc, GFile * file, CheckcopyInputStream *cin)
 }
 
 
-static void 
+static void
 process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * dst, gchar * relname, gboolean verify_only)
 {
   //CheckcopyProcessorPrivate *priv = GET_PRIVATE (CHECKCOPY_PROCESSOR (proc));
@@ -348,6 +348,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
     thread_show_gerror (file, error);
     g_error_free (error);
     error = NULL;
+    checkcopy_file_list_mark_failed (base->list, relname);
 
   } else {
     /* created input stream successfully */
