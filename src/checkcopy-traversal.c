@@ -43,7 +43,7 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
   gchar *attribs;
   gboolean done = TRUE;
 
-  attribs = g_strconcat (G_FILE_ATTRIBUTE_STANDARD_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ",", 
+  attribs = g_strconcat (G_FILE_ATTRIBUTE_STANDARD_NAME "," G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME ",",
                          checkcopy_file_handler_get_attribute_list (fhandler), NULL);
 
   //DBG ("Checking for '%s' attributes", attribs);
@@ -51,10 +51,10 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
   cancel = checkcopy_get_cancellable();
 
   if (!g_cancellable_set_error_if_cancelled (cancel, error))
-    fileinfo = g_file_query_info (file, 
+    fileinfo = g_file_query_info (file,
                                   attribs,
                                   G_FILE_QUERY_INFO_NONE, cancel, error);
-  
+
   if (fileinfo != NULL) {
 
     name = g_file_info_get_display_name (fileinfo);
@@ -98,13 +98,6 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
       } /* if iter */
 
-      if (error && *error) {
-        thread_show_gerror (file, *error);
-        g_error_free (*error);
-        *error = NULL;
-        done = FALSE;
-      }
-
     } else {
 #ifdef DEBUG
       gchar *relname;
@@ -120,6 +113,13 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
     }
   }
 
+  if (error && *error) {
+    thread_show_gerror (file, *error);
+    g_error_free (*error);
+    *error = NULL;
+    done = FALSE;
+  }
+
   g_free (attribs);
 
   return done;
@@ -127,14 +127,14 @@ checkcopy_traverse_file (CheckcopyFileHandler *fhandler, GFile *root, GFile *fil
 
 /* public */
 
-void 
+void
 checkcopy_traverse_args (gchar **files, const gint count, CheckcopyFileHandler *fhandler)
 {
   int i;
 
   for (i=0; i<count; i++) {
     GFile *file;
-   
+
     file = g_file_new_for_commandline_arg (files[i]);
 
     checkcopy_traverse (file, fhandler);
