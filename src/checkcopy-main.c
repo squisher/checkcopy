@@ -36,8 +36,8 @@
 #include "progress-dialog.h"
 #include "error.h"
 
-/* 
- * prototypes 
+/*
+ * prototypes
  */
 
 GFile * ask_for_destination ();
@@ -47,7 +47,7 @@ void debug_log_handler (const gchar *domain, GLogLevelFlags level, const gchar *
 
 
 /*
- * globals 
+ * globals
  */
 
 static gchar *dest = NULL;
@@ -55,19 +55,19 @@ static gchar *default_dest = NULL;
 static gboolean show_version = FALSE;
 
 static GOptionEntry optionentries[] = {
-  { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest, 
+  { "destination", 'd', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &dest,
     "Specifies the destination of the copy operation, or verify://", "SOME_DIR"},
-  { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest, 
+  { "default-destination", 'D', G_OPTION_FLAG_FILENAME, G_OPTION_ARG_STRING, &default_dest,
     "Specifies the default destination of the copy operation", "SOME_DIR"},
-  { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version, 
+  { "version", 'V', G_OPTION_FLAG_NO_ARG , G_OPTION_ARG_NONE, &show_version,
     "Display program version and exit", NULL },
   { NULL, ' ', 0, 0, NULL, NULL, NULL },
 };
 
 
 
-/* 
- * implementation 
+/*
+ * implementation
  */
 
 #if 0
@@ -92,7 +92,7 @@ ask_for_destination (void)
 
   if (default_dest) {
     gchar *uri;
-    
+
     def_folder = g_file_new_for_commandline_arg (default_dest);
     uri = g_file_get_uri (def_folder);
 
@@ -114,7 +114,7 @@ ask_for_destination (void)
 
 
 
-int 
+int
 main (int argc, char *argv[])
 {
   GError * error = NULL;
@@ -138,7 +138,7 @@ main (int argc, char *argv[])
   g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, debug_log_handler, NULL);
 #endif
 #endif
-  
+
   g_set_application_name (PACKAGE_NAME);
 
 
@@ -185,7 +185,7 @@ main (int argc, char *argv[])
       g_message ("Verification-only mode");
     }
   }
-  
+
   /* user aborted */
   if (dest_folder == NULL)
     goto exit;
@@ -209,7 +209,7 @@ main (int argc, char *argv[])
   worker_params->queue = queue;
   worker_params->dest = dest_folder;
   worker_params->progress_dialog = progress_dialog;
-  
+
   for (i=1; i<argc; i++) {
     g_async_queue_push (queue, g_file_new_for_commandline_arg (argv[i]));
   }

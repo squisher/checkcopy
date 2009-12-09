@@ -40,7 +40,6 @@
 #include "checkcopy-details-window.h"
 
 #define BORDER 10
-#define BUF_SIZE 8192
 #define MAX_FILENAME_LEN 80
 
 #define PROGRESS_DIALOG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_PROGRESS_DIALOG, ProgressDialogPrivate))
@@ -187,7 +186,7 @@ progress_dialog_class_init (ProgressDialogClass * klass)
                                                          0, -1, 0, G_PARAM_READWRITE));
   g_object_class_install_property (object_class, PROP_VERIFY_ONLY,
                                    g_param_spec_boolean ("verify-only", _("Verify only"), _("Verification only mode"),
-                                                         FALSE, G_PARAM_READWRITE));
+                                                         FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
   g_object_class_install_property (object_class, PROP_NUM_FILES,
                                    g_param_spec_uint ("num-files", _("Number of files"), _("Number of files"),
                                    0, G_MAXUINT, 0, G_PARAM_WRITABLE));
@@ -827,7 +826,7 @@ ProgressDialog *
 progress_dialog_new (gboolean verify_only)
 {
   ProgressDialog *obj;
-  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "verify-only", verify_only));
+  obj = PROGRESS_DIALOG (g_object_new (TYPE_PROGRESS_DIALOG, "verify-only", verify_only, NULL));
 
   return obj;
 }

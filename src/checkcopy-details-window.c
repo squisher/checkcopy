@@ -1,20 +1,20 @@
 /*
  *  Copyright (C) 2009 David Mohr <david@mcbf.net>
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Library General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -170,6 +170,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   priv->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (priv->store));
   view = GTK_TREE_VIEW (priv->view);
   renderer = gtk_cell_renderer_text_new ();
+  gtk_cell_renderer_set_padding (renderer, 6, 6);
 
   column = gtk_tree_view_column_new_with_attributes (_("Filename"), renderer, "text", COLUMN_RELNAME, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_RELNAME), NULL);
@@ -244,7 +245,7 @@ static void
 set_color (GtkCellRenderer *renderer, CheckcopyFileStatus status)
 {
   const gchar * color;
-  
+
   color = checkcopy_file_info_status_color (status);
 
   if (color) {
@@ -280,7 +281,7 @@ cell_status_to_string (GtkTreeViewColumn * col, GtkCellRenderer *renderer, GtkTr
   gtk_tree_model_get (model, iter, COLUMN_STATUS, &status, -1);
 
   g_object_set (G_OBJECT (renderer), "text", checkcopy_file_status_to_string (status), NULL);
-  
+
   set_color (renderer, status);
 }
 
