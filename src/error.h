@@ -21,11 +21,12 @@
 
 #include "progress-dialog.h"
 
-#define MD5COPY_ERROR md5copy_error_quark ()
+#define CHECKCOPY_ERROR checkcopy_error_quark ()
 
 enum {
-  MD5COPY_ERROR_GENERIC,
-  MD5COPY_ERROR_CONSUMER_TIMEOUT,
+  CHECKCOPY_ERROR_GENERIC,
+  CHECKCOPY_ERROR_CONSUMER_TIMEOUT,
+  CHECKCOPY_ERROR_INVALID_STATE_CHANGE,
 };
 
 gboolean error_init();
