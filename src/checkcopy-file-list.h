@@ -53,9 +53,10 @@ typedef struct {
 } CheckcopyFileListClass;
 
 typedef struct {
-  gint copied;
-  gint verified;
-  gint failed;
+  guint copied;
+  guint verified;
+  guint failed;
+  guint not_found;
 } CheckcopyFileListStats;
 
 GType checkcopy_file_list_get_type (void);
@@ -63,14 +64,17 @@ GType checkcopy_file_list_get_type (void);
 gint checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file);
 gboolean checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest);
 
-gboolean checkcopy_file_list_is_known (CheckcopyFileList * list, gchar * relname);
+CheckcopyFileInfo * checkcopy_file_list_grab_info (CheckcopyFileList * list, gchar *relname);
 CheckcopyFileStatus checkcopy_file_list_get_status (CheckcopyFileList * list, gchar *relname);
 CheckcopyChecksumType checkcopy_file_list_get_file_type (CheckcopyFileList * list, gchar *relname);
 CheckcopyFileStatus checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const gchar *checksum, CheckcopyChecksumType checksum_type);
 void checkcopy_file_list_mark_failed (CheckcopyFileList * list, gchar * relname);
+gboolean checkcopy_file_list_transition (CheckcopyFileList * list,
+                                                CheckcopyFileInfo * info, CheckcopyFileStatus new_status);
 
 GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
 const CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
+void checkcopy_file_list_sweep (CheckcopyFileList * list);
 
 CheckcopyFileList* checkcopy_file_list_get_instance (void);
 

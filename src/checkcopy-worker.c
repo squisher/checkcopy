@@ -103,6 +103,8 @@ checkcopy_worker (CheckcopyWorkerParams * params)
     }
 
     checkcopy_file_list_write_checksum (list, params->dest);
+    checkcopy_file_list_sweep (list);
+
     progress_dialog_thread_set_status (progress_dialog, PROGRESS_DIALOG_STATUS_COMPLETED);
 
 #ifdef DEBUG

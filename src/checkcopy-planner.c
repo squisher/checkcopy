@@ -1,20 +1,20 @@
 /*
  *  Copyright (C) 2009 David Mohr <david@mcbf.net>
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Library General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -148,10 +148,17 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
   CheckcopyPlannerPrivate *priv = GET_PRIVATE(planner);
 
   gchar * relname;
+  CheckcopyFileInfo * our_info;
 
   relname = g_file_get_relative_path (root, file);
+  our_info = checkcopy_file_list_grab_info (base->list, relname);
 
-  if (!checkcopy_file_list_is_known (base->list, relname)) {
+  if (!our_info->seen) {
+
+    our_info->seen = TRUE;
+
+    if (our_info->status == CHECKCOPY_STATUS_NONE)
+      checkcopy_file_list_transition (base->list, our_info, CHECKCOPY_STATUS_FOUND);
 
     if (g_file_info_get_file_type (info) != G_FILE_TYPE_DIRECTORY) {
       priv->num_files++;

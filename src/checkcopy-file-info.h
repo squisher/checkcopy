@@ -24,13 +24,26 @@ G_BEGIN_DECLS
 
 /* Keep status_text and status_color in sync with this enum! */
 typedef enum {
+  /* initial state */
   CHECKCOPY_STATUS_NONE,
+  /* checksum has been found */
   CHECKCOPY_STATUS_VERIFIABLE,
+  /* file has been seen, but no checksum yet */
+  CHECKCOPY_STATUS_FOUND,
+
   CHECKCOPY_STATUS_MARKER_PROCESSED,
+
+  /* file is processed and checksum were found, it matched */
   CHECKCOPY_STATUS_VERIFIED,
+  /* file is processed, but no checksum was found */
   CHECKCOPY_STATUS_COPIED,
+  /* file is processed, but checksum did not match */
   CHECKCOPY_STATUS_VERIFICATION_FAILED,
+  /* file processing failed (i.e. no read permissions) */
   CHECKCOPY_STATUS_FAILED,
+  /* file had a checksum, but was not found */
+  CHECKCOPY_STATUS_NOT_FOUND,
+
   CHECKCOPY_STATUS_LAST,
 } CheckcopyFileStatus;
 
@@ -47,6 +60,7 @@ typedef struct {
   gchar * checksum;
   CheckcopyChecksumType checksum_type;
   CheckcopyFileStatus status;
+  gboolean seen;
 } CheckcopyFileInfo;
 
 #define VERIFY_SCHEME "verify"

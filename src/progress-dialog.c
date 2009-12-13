@@ -52,7 +52,7 @@ typedef struct
   GtkWidget *file_label;
   GtkWidget *button_close;
   GtkWidget *button_details;
-  GtkWidget *entry_total, *entry_copied, *entry_verified, *entry_failed;
+  GtkWidget *entry_not_found, *entry_copied, *entry_verified, *entry_failed;
 
   CheckcopyDetailsWindow *details;
   CheckcopyFileList * list;
@@ -265,12 +265,13 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_container_add (GTK_CONTAINER (align), statbox);
   gtk_widget_show (statbox);
 
-  label = gtk_label_new (_("Total Files:"));
+  label = gtk_label_new (_("Verified:"));
   gtk_misc_set_padding (GTK_MISC (label), 4, 0);
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_total = entry = stats_label_new (_("Total number of files"), label);
+  priv->entry_verified = entry = stats_label_new (_("Number of file(s) which were copied and verified successfully"),
+                                                  label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -279,17 +280,7 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_copied = entry = stats_label_new (_("Number of files which were copied successfully but not verified by a checksum"), label);
-  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
-  gtk_widget_show (entry);
-
-  label = gtk_label_new (_("Verified:"));
-  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
-  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
-  gtk_widget_show (label);
-
-  priv->entry_verified = entry = stats_label_new (_("Number of files which were copied and verified successfully"),
-                                                  label);
+  priv->entry_copied = entry = stats_label_new (_("Number of file(s) which were copied successfully but not verified by a checksum"), label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -298,8 +289,17 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
 
-  priv->entry_failed = entry = stats_label_new (_("Number of files which failed copying and/or verification"),
+  priv->entry_failed = entry = stats_label_new (_("Number of file(s) which failed copying and/or verification"),
                                                 label);
+  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
+  gtk_widget_show (entry);
+
+  label = gtk_label_new (_("Not found:"));
+  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
+  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
+  priv->entry_not_found = entry = stats_label_new (_("Number of file(s) which were mentioned in a checksum file, but were not found"), label);
   gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
   gtk_widget_show (entry);
 
@@ -383,10 +383,12 @@ progress_dialog_set_property (GObject * object, guint prop_id, const GValue * va
     break;
   case PROP_NUM_FILES:
     {
+#if 0
       gchar *s;
       s = g_strdup_printf ("%4d", g_value_get_uint (value));
       gtk_entry_set_text (GTK_ENTRY (priv->entry_total), s);
       g_free (s);
+#endif
     }
 #ifdef DEBUG
     priv->num_files = g_value_get_uint (value);
@@ -555,6 +557,14 @@ update_stat_labels (ProgressDialog * dialog)
 
   s = g_strdup_printf (fmt, stats->copied);
   gtk_entry_set_text (GTK_ENTRY (priv->entry_copied), s);
+  g_free (s);
+
+  if (stats->not_found > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_NOT_FOUND)) != NULL) {
+    gdk_color_parse (color_str, &color);
+    gtk_widget_modify_base (priv->entry_not_found, GTK_STATE_NORMAL, &color);
+  }
+  s = g_strdup_printf (fmt, stats->not_found);
+  gtk_entry_set_text (GTK_ENTRY (priv->entry_not_found), s);
   g_free (s);
 
   if (stats->verified > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFIED)) != NULL) {

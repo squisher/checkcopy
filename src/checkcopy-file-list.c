@@ -35,6 +35,7 @@
 
 static GObject * checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectConstructParam * construct_params);
 static GOutputStream * get_checksum_stream (CheckcopyFileList * list, GFile * dest);
+static void mark_not_found (gpointer key, gpointer value, gpointer data);
 
 /*- globals -*/
 
@@ -320,19 +321,14 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
         filename = g_strdup (c);
 
 
-      info = g_hash_table_lookup (priv->files_hash, filename);
+      info = checkcopy_file_list_grab_info (list, filename);
 
-      if (info == NULL) {
-        info = g_new0 (CheckcopyFileInfo, 1);
-
-        info->relname = filename;
+      if (info->status == CHECKCOPY_STATUS_NONE) {
         info->checksum = checksum;
         info->checksum_type = checksum_type;
-        info->status = CHECKCOPY_STATUS_VERIFIABLE;
+        checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_VERIFIABLE);
 
         DBG ("Parsed checksum for %s", info->relname);
-
-        g_hash_table_insert (priv->files_hash, info->relname, info);
 
         if (priv->verify_only) {
           checkcopy_worker_add_file (g_file_resolve_relative_path (root, filename));
@@ -359,7 +355,7 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
           /* TODO: display the checksum which the file actually has */
           g_free (checksum);
 
-          info->status = CHECKCOPY_STATUS_VERIFICATION_FAILED;
+          checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_VERIFICATION_FAILED);
         }
       }
     }
@@ -375,12 +371,22 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
   return n;
 }
 
-gboolean
-checkcopy_file_list_is_known (CheckcopyFileList * list, gchar *relname)
+CheckcopyFileInfo *
+checkcopy_file_list_grab_info (CheckcopyFileList * list, gchar *relname)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+  CheckcopyFileInfo *info;
 
-  return g_hash_table_lookup (priv->files_hash, relname) != NULL;
+  info = g_hash_table_lookup (priv->files_hash, relname);
+
+  if (info == NULL) {
+    info = g_new0 (CheckcopyFileInfo, 1);
+    info->relname = g_strdup (relname);
+
+    g_hash_table_insert (priv->files_hash, info->relname, info);
+  }
+
+  return info;
 }
 
 CheckcopyFileStatus
@@ -421,22 +427,18 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
 
   info = g_hash_table_lookup (priv->files_hash, relname);
 
-  if (info == NULL) {
+  g_assert (info != NULL);
+
+  if (info->status == CHECKCOPY_STATUS_FOUND) {
     /* We have not seen a checksum for this file yet.
      * Record the checksum we just calculated */
 
     DBG ("%s had no checksum, recording %s", relname, checksum);
 
-    info = g_new0 (CheckcopyFileInfo, 1);
-
-    info->relname = g_strdup (relname);
     info->checksum = g_strdup (checksum);
     info->checksum_type = checksum_type;
-    info->status = CHECKCOPY_STATUS_COPIED;
+    checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_COPIED);
 
-    priv->stats.copied++;
-
-    g_hash_table_insert (priv->files_hash, info->relname, info);
   } else {
     /* We have a checksum, verify it and record the result */
 
@@ -444,16 +446,14 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
       /* Verification failed */
       // TODO: update the error list
 
-      info->status = CHECKCOPY_STATUS_VERIFICATION_FAILED;
-      priv->stats.failed++;
+      checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_VERIFICATION_FAILED);
 
       g_warning ("%s was supposed to have checksum %s, but it had %s", relname, info->checksum, checksum);
     } else {
       /* Verification passed */
 
       DBG ("%s matched checksum %s", relname, checksum);
-      info->status = CHECKCOPY_STATUS_VERIFIED;
-      priv->stats.verified++;
+      checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_VERIFIED);
     }
   }
 
@@ -463,21 +463,12 @@ checkcopy_file_list_check_file (CheckcopyFileList * list, gchar *relname, const 
 void
 checkcopy_file_list_mark_failed (CheckcopyFileList * list, gchar * relname)
 {
-  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+//  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
   CheckcopyFileInfo *info;
 
-  info = g_hash_table_lookup (priv->files_hash, relname);
+  info = checkcopy_file_list_grab_info (list, relname);
 
-  if (info == NULL) {
-    info = g_new0 (CheckcopyFileInfo, 1);
-    info->relname = g_strdup (relname);
-
-    g_hash_table_insert (priv->files_hash, relname, info);
-  }
-
-  info->status = CHECKCOPY_STATUS_FAILED;
-
-  priv->stats.failed++;
+  checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_FAILED);
 }
 
 gboolean
@@ -595,6 +586,136 @@ checkcopy_file_list_get_stats (CheckcopyFileList * list)
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
 
   return &(priv->stats);
+}
+
+static void
+mark_not_found (gpointer key, gpointer value, gpointer data)
+{
+  //gchar * relname = key;
+  CheckcopyFileInfo * info = (CheckcopyFileInfo *) value;
+  CheckcopyFileList * list = CHECKCOPY_FILE_LIST (data);
+
+  g_assert (info != NULL);
+
+  if (info->status == CHECKCOPY_STATUS_VERIFIABLE) {
+    checkcopy_file_list_transition (list, info, CHECKCOPY_STATUS_NOT_FOUND);
+  }
+}
+
+void
+checkcopy_file_list_sweep (CheckcopyFileList * list)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  g_hash_table_foreach (priv->files_hash, mark_not_found, list);
+}
+
+gboolean
+checkcopy_file_list_transition (CheckcopyFileList * list,
+                                CheckcopyFileInfo * info, CheckcopyFileStatus new_status)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  gboolean r = FALSE;
+
+  g_assert (list != NULL);
+  g_assert (info != NULL);
+  g_return_val_if_fail (new_status < CHECKCOPY_STATUS_LAST, FALSE);
+
+  switch (info->status) {
+    case CHECKCOPY_STATUS_NONE:
+      if (new_status == CHECKCOPY_STATUS_FOUND ||
+          new_status == CHECKCOPY_STATUS_VERIFIABLE)
+        r = TRUE;
+      break;
+    case CHECKCOPY_STATUS_VERIFIABLE:
+      if (new_status == CHECKCOPY_STATUS_VERIFIED ||
+          new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
+          new_status == CHECKCOPY_STATUS_NOT_FOUND)
+        r = TRUE;
+      break;
+    case CHECKCOPY_STATUS_FOUND:
+      if (new_status == CHECKCOPY_STATUS_VERIFIED ||
+          new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
+          new_status ==  CHECKCOPY_STATUS_COPIED)
+        r = TRUE;
+      break;
+    case CHECKCOPY_STATUS_NOT_FOUND:
+      if (new_status == CHECKCOPY_STATUS_VERIFIED ||
+          new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
+          new_status == CHECKCOPY_STATUS_FAILED) {
+        r = TRUE;
+        priv->stats.not_found--;
+      }
+      break;
+    case CHECKCOPY_STATUS_COPIED:
+      if (new_status == CHECKCOPY_STATUS_VERIFIED ||
+          new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
+          new_status == CHECKCOPY_STATUS_FAILED) {
+        r = TRUE;
+        priv->stats.copied--;
+      }
+      break;
+    case CHECKCOPY_STATUS_VERIFIED:
+      if (new_status == CHECKCOPY_STATUS_FAILED) {
+        r = TRUE;
+        priv->stats.verified--;
+      }
+      break;
+    case CHECKCOPY_STATUS_VERIFICATION_FAILED:
+      if (new_status == CHECKCOPY_STATUS_FAILED) {
+        r = TRUE;
+        priv->stats.failed--;
+      }
+      break;
+    case CHECKCOPY_STATUS_FAILED:
+      if (new_status == CHECKCOPY_STATUS_FAILED) {
+        r = TRUE;
+        priv->stats.failed--;
+        g_warning ("Change from failed to failed is redundant");
+      }
+      break;
+    case CHECKCOPY_STATUS_MARKER_PROCESSED:
+    case CHECKCOPY_STATUS_LAST:
+      /* these should never occur */
+      g_critical ("Invalid current state %d", info->status);
+      break;
+  }
+
+  switch (new_status) {
+    case CHECKCOPY_STATUS_NONE:
+    case CHECKCOPY_STATUS_VERIFIABLE:
+    case CHECKCOPY_STATUS_FOUND:
+      // do nothing
+      break;
+    case CHECKCOPY_STATUS_NOT_FOUND:
+      priv->stats.not_found++;
+      break;
+    case CHECKCOPY_STATUS_COPIED:
+      priv->stats.copied++;
+      break;
+    case CHECKCOPY_STATUS_VERIFIED:
+      priv->stats.verified++;
+      break;
+    case CHECKCOPY_STATUS_VERIFICATION_FAILED:
+    case CHECKCOPY_STATUS_FAILED:
+      priv->stats.failed++;
+      break;
+    case CHECKCOPY_STATUS_MARKER_PROCESSED:
+    case CHECKCOPY_STATUS_LAST:
+      /* these should never occur */
+      g_critical ("Invalid new state %d", new_status);
+      break;
+  }
+
+  if (!r) {
+    g_critical ("Invalid state change: %d -> %d", info->status, new_status);
+  } else {
+    DBG ("Status change for %s from %d -> %d", info->relname, info->status, new_status);
+    info->status = new_status;
+  }
+
+  return r;
 }
 
 CheckcopyFileList*

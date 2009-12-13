@@ -48,20 +48,24 @@ static int checksum_type_lengths [] = {
 static gchar * status_text [] = {
   N_("none"),
   N_("checksum found"),
+  N_("file found"),
   "--marker--",
   N_("verified"),
   N_("copied"),
   N_("FAILED"),
   N_("FAILED"),
+  N_("not found"),
   "last"
 }; // same order as CheckcopyFileStatus
 
 static const gchar * status_color [] = {
   NULL,
   NULL,
+  NULL,
   NULL, /* --marker-- */
   "#22ee44",
   NULL,
+  "#ee4422",
   "#ee4422",
   "#ee4422",
   NULL /* last */
