@@ -541,7 +541,7 @@ update_stat_labels (ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-  const CheckcopyFileListStats * stats;
+  CheckcopyFileListStats * stats;
   gchar *s;
   const gchar fmt[] = "%4d";
   GdkColor color;
@@ -568,6 +568,8 @@ update_stat_labels (ProgressDialog * dialog)
     }
 
   } /* end for */
+
+  g_free (stats);
 }
 
 /* callbacks */

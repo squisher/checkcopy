@@ -69,6 +69,7 @@ struct _CheckcopyFileListPrivate {
 
   gboolean verify_only;
 
+  GMutex * stats_mutex;
   CheckcopyFileListStats stats;
 };
 
@@ -131,6 +132,8 @@ checkcopy_file_list_init (CheckcopyFileList *self)
   CheckcopyFileListPrivate *priv = GET_PRIVATE (self);
 
   priv->files_hash = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, (GDestroyNotify) checkcopy_file_info_free);
+
+  priv->stats_mutex = g_mutex_new ();
 }
 
 static GObject *
@@ -580,12 +583,18 @@ checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
   return file_list;
 }
 
-const CheckcopyFileListStats *
+CheckcopyFileListStats *
 checkcopy_file_list_get_stats (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
 
-  return &(priv->stats);
+  CheckcopyFileListStats * stats;
+
+  g_mutex_lock (priv->stats_mutex);
+  stats = g_memdup (&(priv->stats), sizeof (CheckcopyFileListStats));
+  g_mutex_unlock (priv->stats_mutex);
+
+  return stats;
 }
 
 CheckcopyFileStatus
@@ -636,6 +645,8 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
   g_assert (list != NULL);
   g_assert (info != NULL);
   g_return_val_if_fail (new_status < CHECKCOPY_STATUS_LAST, FALSE);
+
+  g_mutex_lock (priv->stats_mutex);
 
   switch (info->status) {
     case CHECKCOPY_STATUS_NONE:
@@ -722,6 +733,7 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
       g_critical ("Invalid new state %d", new_status);
       break;
   }
+  g_mutex_unlock (priv->stats_mutex);
 
   if (!r) {
     g_error ("Invalid state change: %d -> %d", info->status, new_status);

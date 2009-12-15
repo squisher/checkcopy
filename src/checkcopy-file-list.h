@@ -78,7 +78,7 @@ gboolean checkcopy_file_list_transition (CheckcopyFileList * list,
                                                 CheckcopyFileInfo * info, CheckcopyFileStatus new_status);
 
 GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
-const CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
+CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
 CheckcopyFileStatus checkcopy_file_list_status_to_info(CheckcopyFileListCount i);
 void checkcopy_file_list_sweep (CheckcopyFileList * list);
 
