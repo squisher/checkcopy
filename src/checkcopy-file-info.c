@@ -119,7 +119,7 @@ checkcopy_file_info_free (CheckcopyFileInfo *info)
 }
 
 gboolean
-checkcopy_file_info_is_checksum_file (GFile *file)
+checkcopy_file_info_is_checksum_file (CheckcopyFileInfo * info, GFile *file)
 {
   gchar * uri;
   int i;
@@ -136,6 +136,7 @@ checkcopy_file_info_is_checksum_file (GFile *file)
   }
 
   g_free (uri);
+  info->checksum_file = r;
 
   return r;
 }

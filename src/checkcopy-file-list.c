@@ -30,12 +30,16 @@
 #include "checkcopy-cancel.h"
 #include "error.h"
 #include "checkcopy-worker.h"
+#include "ompa-list.h"
 
 /*- private prototypes -*/
 
 static GObject * checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectConstructParam * construct_params);
 static GOutputStream * get_checksum_stream (CheckcopyFileList * list, GFile * dest);
+static GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
 static void mark_not_found (gpointer key, gpointer value, gpointer data);
+static gboolean verify_list_filter (gconstpointer data);
+static gboolean keep_checksum_stats (CheckcopyFileStatus status, const CheckcopyFileInfo * info);
 
 /*- globals -*/
 
@@ -569,7 +573,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
   return out != NULL;
 }
 
-GList *
+static GList *
 checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
@@ -578,7 +582,43 @@ checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
 
   file_list = g_hash_table_get_values (priv->files_hash);
 
+  file_list = g_list_copy (file_list);
+
   file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
+
+  return file_list;
+}
+
+static gboolean
+keep_checksum_stats (CheckcopyFileStatus status, const CheckcopyFileInfo * info)
+{
+  return (status != CHECKCOPY_STATUS_COPIED) || !info->checksum_file;
+}
+
+static gboolean
+verify_list_filter (gconstpointer data)
+{
+  const CheckcopyFileInfo * info = data;
+
+  return keep_checksum_stats (info->status, info);
+}
+
+GList *
+checkcopy_file_list_get_display_list (CheckcopyFileList * list)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  GList * file_list;
+
+  file_list = g_hash_table_get_values (priv->files_hash);
+
+  file_list = g_list_copy (file_list);
+
+  if (priv->verify_only) {
+    /* Filter out the checksums of the checksum files.
+     * Usually you expect them not to have a checksum */
+    file_list = ompa_list_filter (file_list, verify_list_filter);
+  }
 
   return file_list;
 }
@@ -679,7 +719,10 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
           new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
           new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]--;
+
+        if (keep_checksum_stats (info->status, info)) {
+          priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]--;
+        }
       }
       break;
     case CHECKCOPY_STATUS_VERIFIED:
@@ -718,7 +761,9 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
       priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND]++;
       break;
     case CHECKCOPY_STATUS_COPIED:
-      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]++;
+      if (keep_checksum_stats (new_status, info)) {
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]++;
+      }
       break;
     case CHECKCOPY_STATUS_VERIFIED:
       priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_VERIFIED]++;

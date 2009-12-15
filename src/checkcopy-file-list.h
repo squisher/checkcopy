@@ -77,7 +77,7 @@ void checkcopy_file_list_mark_failed (CheckcopyFileList * list, gchar * relname)
 gboolean checkcopy_file_list_transition (CheckcopyFileList * list,
                                                 CheckcopyFileInfo * info, CheckcopyFileStatus new_status);
 
-GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
+GList * checkcopy_file_list_get_display_list (CheckcopyFileList * list);
 CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
 CheckcopyFileStatus checkcopy_file_list_status_to_info(CheckcopyFileListCount i);
 void checkcopy_file_list_sweep (CheckcopyFileList * list);

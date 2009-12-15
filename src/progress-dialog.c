@@ -595,7 +595,7 @@ cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
   g_object_set (G_OBJECT (priv->details), "file-info-list",
-                checkcopy_file_list_get_sorted_list (priv->list), NULL);
+                checkcopy_file_list_get_display_list (priv->list), NULL);
 
   gtk_widget_show (GTK_WIDGET (priv->details));
 }

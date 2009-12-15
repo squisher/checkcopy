@@ -171,7 +171,7 @@ process (CheckcopyFileHandler *fhandler, GFile *root, GFile *file, GFileInfo *in
     g_object_set (base->progress_dialog, "total-size", priv->size, NULL);
 
 
-    if (checkcopy_file_info_is_checksum_file (file)) {
+    if (checkcopy_file_info_is_checksum_file (our_info, file)) {
       checksum_file_list_parse_checksum_file (base->list, root, file);
     }
   }

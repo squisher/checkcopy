@@ -61,6 +61,7 @@ typedef struct {
   CheckcopyChecksumType checksum_type;
   CheckcopyFileStatus status;
   gboolean seen;
+  gboolean checksum_file;
 } CheckcopyFileInfo;
 
 #define VERIFY_SCHEME "verify"
@@ -68,7 +69,7 @@ typedef struct {
 
 void checkcopy_file_info_free (CheckcopyFileInfo *info);
 
-gboolean checkcopy_file_info_is_checksum_file (GFile *file);
+gboolean checkcopy_file_info_is_checksum_file (CheckcopyFileInfo * info, GFile *file);
 
 CheckcopyChecksumType checkcopy_file_info_get_checksum_type (gchar *checksum);
 GChecksumType checkcopy_checksum_type_to_gio (CheckcopyChecksumType type);
