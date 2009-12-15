@@ -588,6 +588,21 @@ checkcopy_file_list_get_stats (CheckcopyFileList * list)
   return &(priv->stats);
 }
 
+CheckcopyFileStatus
+checkcopy_file_list_status_to_info (CheckcopyFileListCount i)
+{
+  switch (i) {
+    case CHECKCOPY_FILE_LIST_COUNT_COPIED:
+      return CHECKCOPY_STATUS_COPIED;
+    case CHECKCOPY_FILE_LIST_COUNT_VERIFIED:
+      return CHECKCOPY_STATUS_VERIFIED;
+    case CHECKCOPY_FILE_LIST_COUNT_FAILED:
+      return CHECKCOPY_STATUS_FAILED;
+    case CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND:
+      return CHECKCOPY_STATUS_NOT_FOUND;
+  }
+}
+
 static void
 mark_not_found (gpointer key, gpointer value, gpointer data)
 {
@@ -645,7 +660,7 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
           new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
           new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.not_found--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND]--;
       }
       break;
     case CHECKCOPY_STATUS_COPIED:
@@ -653,25 +668,25 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
           new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
           new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.copied--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]--;
       }
       break;
     case CHECKCOPY_STATUS_VERIFIED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.verified--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_VERIFIED]--;
       }
       break;
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.failed--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]--;
       }
       break;
     case CHECKCOPY_STATUS_FAILED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.failed--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]--;
         g_warning ("Change from failed to failed is redundant");
       }
       break;
@@ -689,17 +704,17 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
       // do nothing
       break;
     case CHECKCOPY_STATUS_NOT_FOUND:
-      priv->stats.not_found++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND]++;
       break;
     case CHECKCOPY_STATUS_COPIED:
-      priv->stats.copied++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]++;
       break;
     case CHECKCOPY_STATUS_VERIFIED:
-      priv->stats.verified++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_VERIFIED]++;
       break;
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
     case CHECKCOPY_STATUS_FAILED:
-      priv->stats.failed++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]++;
       break;
     case CHECKCOPY_STATUS_MARKER_PROCESSED:
     case CHECKCOPY_STATUS_LAST:
@@ -709,7 +724,7 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
   }
 
   if (!r) {
-    g_critical ("Invalid state change: %d -> %d", info->status, new_status);
+    g_error ("Invalid state change: %d -> %d", info->status, new_status);
   } else {
     DBG ("Status change for %s from %d -> %d", info->relname, info->status, new_status);
     info->status = new_status;

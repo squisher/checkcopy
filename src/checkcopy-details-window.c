@@ -170,7 +170,7 @@ checkcopy_details_window_init (CheckcopyDetailsWindow *self)
   priv->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (priv->store));
   view = GTK_TREE_VIEW (priv->view);
   renderer = gtk_cell_renderer_text_new ();
-  gtk_cell_renderer_set_padding (renderer, 6, 6);
+  //gtk_cell_renderer_set_padding (renderer, 6, 6);
 
   column = gtk_tree_view_column_new_with_attributes (_("Filename"), renderer, "text", COLUMN_RELNAME, NULL);
   gtk_tree_view_column_set_cell_data_func (column, renderer, cell_string, GINT_TO_POINTER (COLUMN_RELNAME), NULL);
