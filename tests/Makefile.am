@@ -4,12 +4,15 @@ INCLUDES = 					\
 	-I$(top_srcdir)/src
 
 bin_PROGRAMS = checksum
+
 checksum_headers = 				\
+	checkcopy-file-info.h			\
 	checkcopy-input-stream.h
 
 checksum_SOURCES = 				\
 	$(checksum_headers)			\
 	../src/checkcopy-input-stream.c		\
+	../src/checkcopy-file-info.c		\
 	checksum.c
 
 checksum_CFLAGS = 				\

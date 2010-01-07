@@ -27,7 +27,18 @@
 
 #include <stdlib.h>
 
-#include <checkcopy-input-stream.h>
+#include "checkcopy-input-stream.h"
+#include "checkcopy-file-info.h"
+
+static CheckcopyFileInfo test_files[] = {
+  { "data/checkcopy", "718fa88fd9c3a3e8b8318b282b4d3817a5e3c140",
+    CHECKCOPY_SHA1, 0, FALSE, FALSE },
+  { "data/COPYING", "751419260aa954499f7abaabaa882bbe",
+    CHECKCOPY_MD5, 0, FALSE, FALSE },
+  { "data/COPYING", "ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6",
+    CHECKCOPY_SHA256, 0, FALSE, FALSE },
+  { NULL }
+};
 
 static void
 input_stream_checksum(void)
@@ -39,34 +50,39 @@ input_stream_checksum(void)
   gsize read;
   GError *error = NULL;
   const char * checksum;
+  CheckcopyFileInfo * info;
 
-  const char * filename = "data/checkcopy";
-  const char * checksum_expected = "718fa88fd9c3a3e8b8318b282b4d3817a5e3c140";
+  g_assert (test_files != NULL);
 
-  file = g_file_new_for_path (filename);
-  g_assert (file != NULL);
+  for (info = test_files; info->relname != NULL; info++) {
+    g_print ("Testing %s...\n", info->relname);
 
-  in = G_INPUT_STREAM (g_file_read (file, NULL, &error));
-  g_assert_no_error (error);
-  g_assert (in != NULL);
+    file = g_file_new_for_path (info->relname);
+    g_assert (file != NULL);
 
-  cin = checkcopy_input_stream_new (in, G_CHECKSUM_SHA1);
-  g_assert (cin != NULL);
-
-  for (read = -1; read != 0; )
-  {
-    gboolean r;
-    
-    r = g_input_stream_read_all (G_INPUT_STREAM (cin),
-                                 buffer, 8192,
-                                 &read, NULL, &error);
+    in = G_INPUT_STREAM (g_file_read (file, NULL, &error));
     g_assert_no_error (error);
-  }
-  g_input_stream_close (G_INPUT_STREAM (cin), NULL, &error);
-  g_assert_no_error (error);
+    g_assert (in != NULL);
 
-  checksum = checkcopy_input_stream_get_checksum (cin);
-  g_assert_cmpstr (checksum, ==, checksum_expected);
+    cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (info->checksum_type));
+    g_assert (cin != NULL);
+
+    for (read = -1; read != 0; )
+    {
+      gboolean r;
+      
+      r = g_input_stream_read_all (G_INPUT_STREAM (cin),
+                                  buffer, 8192,
+                                  &read, NULL, &error);
+      g_assert (r);
+      g_assert_no_error (error);
+    }
+    g_input_stream_close (G_INPUT_STREAM (cin), NULL, &error);
+    g_assert_no_error (error);
+
+    checksum = checkcopy_input_stream_get_checksum (cin);
+    g_assert_cmpstr (checksum, ==, info->checksum);
+  }
 }
 
 int
