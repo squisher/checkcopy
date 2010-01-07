@@ -39,3 +39,4 @@ src/core*
 stamp-h1
 autogen.configureflags
 checkcopy-*.tar.*
+.*.swp
