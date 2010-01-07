@@ -1,0 +1,4 @@
+checksum
+.deps/
+.*.swp
+*.o

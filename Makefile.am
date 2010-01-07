@@ -1,5 +1,6 @@
 SUBDIRS = 				\
 	po				\
+	tests				\
 	src
 
 AUTOMAKE_OPTIONS=			\
