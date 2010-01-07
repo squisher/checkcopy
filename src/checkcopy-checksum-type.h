@@ -23,7 +23,7 @@
 G_BEGIN_DECLS
 
 /* KEEP ORDER IN SYNC WITH
- * FIXME
+ * checksum_type_lengths IN checkcopy-file-info.c
  */
 typedef enum {
   CHECKCOPY_NO_CHECKSUM,

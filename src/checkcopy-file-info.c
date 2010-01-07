@@ -33,14 +33,17 @@ static gchar * checksum_type_extensions [] = {
   "sha",
   "sha1",
   "sha256",
+  "sfv",
   "CHECKSUM",
   NULL /* last */
 };
 
 static int checksum_type_lengths [] = {
+  -1,
   32,
   40,
   64,
+  6,
   0, /* NO_CHECKSUM, has to be last */
 }; /* SAME order as CheckcopyChecksumType */
 
