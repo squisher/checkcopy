@@ -23,7 +23,7 @@
 #include "checkcopy-cancel.h"
 
 
-static GCancellable *cancel;
+static GCancellable *cancel = NULL;
 
 
 /* public */
@@ -31,6 +31,8 @@ static GCancellable *cancel;
 void
 checkcopy_cancel_init (void)
 {
+  g_assert (cancel == NULL);
+
   cancel = g_cancellable_new();
 }
 

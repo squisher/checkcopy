@@ -155,7 +155,6 @@ main (int argc, char *argv[])
     }
   }
 
-  error_init ();
   checkcopy_cancel_init ();
 
   if (show_version) {

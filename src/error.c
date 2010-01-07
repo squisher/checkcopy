@@ -31,7 +31,9 @@
 
 /* globals */
 ProgressDialog *progress = NULL;
+#if 0
 gboolean error_occurred;
+#endif
 
 
 /* private prototypes  */
@@ -48,7 +50,9 @@ show_verror (gchar * file, gint line, gboolean abortable, char *fmt, va_list ap)
 
   g_assert (fmt != NULL);
 
+#if 0
   error_occurred = TRUE;
+#endif
 
   msg = g_strdup_vprintf (fmt, ap);
 
@@ -168,6 +172,7 @@ thread_show_gerror_full (gchar * srcfile, gint line, GFile * file, GError *error
   gdk_threads_leave ();
 }
 
+#if 0
 gboolean
 error_has_occurred (void)
 {
@@ -176,6 +181,7 @@ error_has_occurred (void)
 
   return ret;
 }
+#endif
 
 
 GQuark
@@ -191,6 +197,7 @@ error_add_dialog (ProgressDialog *progress_dialog)
   progress = progress_dialog;
 }
 
+#if 0
 gboolean
 error_init (void)
 {
@@ -198,4 +205,5 @@ error_init (void)
 
   return TRUE;
 }
+#endif
 
