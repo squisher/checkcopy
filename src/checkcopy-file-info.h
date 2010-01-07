@@ -19,6 +19,7 @@
 #define _HAVE_CHECKCOPY_FILE_INFO
 
 #include <gio/gio.h>
+#include "checkcopy-checksum-type.h"
 
 G_BEGIN_DECLS
 
@@ -46,14 +47,6 @@ typedef enum {
 
   CHECKCOPY_STATUS_LAST,
 } CheckcopyFileStatus;
-
-typedef enum {
-  CHECKCOPY_MD5,
-  CHECKCOPY_SHA1,
-  CHECKCOPY_SHA256,
-  CHECKCOPY_NO_CHECKSUM, /* Has to be the last, so the order can
-                            match checksum_type_extensions */
-} CheckcopyChecksumType;
 
 typedef struct {
   gchar *relname;

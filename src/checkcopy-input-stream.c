@@ -23,7 +23,21 @@
 
 #include <libxfce4util/libxfce4util.h>
 
+#include <zlib.h>
+
+#include <glib.h>
+
 #include "checkcopy-input-stream.h"
+
+typedef struct {
+  uLong raw;
+  char * string;
+} Crc32Data;
+
+typedef union {
+  GChecksum *glib;
+  Crc32Data zlib;
+} ChecksumData;
 
 /*- private prototypes -*/
 
@@ -46,6 +60,10 @@ static gboolean close_fn     (GInputStream        *stream,
                               GError             **error);
 #endif
 
+static ChecksumData checksum_new (CheckcopyChecksumType type);
+static void checksum_update (CheckcopyChecksumType type, ChecksumData *data,
+                             void *buffer, gssize nread);
+static const char * checksum_get_string (CheckcopyChecksumType type, ChecksumData data);
 
 /*- globals -*/
 
@@ -67,10 +85,8 @@ G_DEFINE_TYPE (CheckcopyInputStream, checkcopy_input_stream, G_TYPE_FILTER_INPUT
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CHECKCOPY_TYPE_INPUT_STREAM, CheckcopyInputStreamPrivate))
 
 typedef struct _CheckcopyInputStreamPrivate CheckcopyInputStreamPrivate;
-
 struct _CheckcopyInputStreamPrivate {
-  GChecksum *checksum;
-  GChecksumType type;
+  ChecksumData checksum[CHECKCOPY_ALL_CHECKSUMS];
 };
 
 static void
@@ -80,9 +96,11 @@ checkcopy_input_stream_get_property (GObject *object, guint property_id,
   CheckcopyInputStreamPrivate *priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (object));
 
   switch (property_id) {
+#if 0
     case PROP_CHECKSUM_TYPE:
       g_value_set_int (value, priv->type);
       break;
+#endif
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -96,8 +114,21 @@ checkcopy_input_stream_set_property (GObject *object, guint property_id,
 
   switch (property_id) {
     case PROP_CHECKSUM_TYPE:
-      priv->type = g_value_get_int (value);
-      break;
+    {
+      gint type;
+
+      type = g_value_get_int (value);
+
+      if (type != CHECKCOPY_ALL_CHECKSUMS) {
+        priv->checksum[type] = checksum_new (type);
+      } else {
+        int i;
+
+        for (i=CHECKCOPY_NO_CHECKSUM+1; i<CHECKCOPY_ALL_CHECKSUMS; i++) {
+          priv->checksum[i] = checksum_new (type);
+        }
+      }
+    } break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
@@ -120,7 +151,8 @@ checkcopy_input_stream_class_init (CheckcopyInputStreamClass *klass)
 
   g_object_class_install_property (object_class, PROP_CHECKSUM_TYPE,
            g_param_spec_int ("checksum-type", _("Checksum type"), _("Checksum type"), 
-                             0, G_MAXINT, G_CHECKSUM_SHA1, G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+                             0, G_MAXINT, G_CHECKSUM_SHA1,
+                             G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
   in_class->read_fn = read_fn;
   //in_class->skip = skip;
@@ -136,9 +168,7 @@ checkcopy_input_stream_construct (GType type, guint n_construct_properties, GObj
   obj = G_OBJECT_CLASS (parent_class)->constructor (type, n_construct_properties, construct_properties);
   priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (obj));
 
-  //DBG ("Using checksum type %d, sha1 = %d", priv->type, G_CHECKSUM_SHA1);
-
-  priv->checksum = g_checksum_new (priv->type);
+  /* Note that priv->checksum is initialized in the setter */
 
   return obj;
 }
@@ -154,7 +184,15 @@ checkcopy_input_stream_finalize (GObject *obj)
   CheckcopyInputStream * stream = CHECKCOPY_INPUT_STREAM (obj);
   CheckcopyInputStreamPrivate * priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (stream));
 
-  g_checksum_free (priv->checksum);
+  int i;
+
+  for (i=CHECKCOPY_NO_CHECKSUM+1; i<CHECKCOPY_ALL_CHECKSUMS; i++) {
+    if (i!=CHECKCOPY_CRC32) {
+      g_checksum_free (priv->checksum[i].glib);
+    } else {
+      g_free (priv->checksum[i].zlib.string);
+    }
+  }
 }
 
 /***************/
@@ -171,10 +209,15 @@ gssize   read_fn      (GInputStream        *stream,
   GFilterInputStream *filter_stream = G_FILTER_INPUT_STREAM (stream);
   GInputStream *base_stream = filter_stream->base_stream;
   gssize nread;
+  int i;
 
   nread = g_input_stream_read (base_stream, buffer, count, cancellable, error);
 
-  g_checksum_update (priv->checksum, buffer, nread);
+  for (i=CHECKCOPY_NO_CHECKSUM+1; i<CHECKCOPY_ALL_CHECKSUMS; i++) {
+    if (priv->checksum[i].glib) {
+      checksum_update (i, &(priv->checksum[i]), buffer, nread);
+    }
+  }
 
   return nread;
 }
@@ -199,13 +242,87 @@ gboolean close_fn     (GInputStream        *stream,
 }
 #endif
 
+static ChecksumData
+checksum_new (CheckcopyChecksumType type)
+{
+  ChecksumData data;
+
+  switch (type) {
+    case CHECKCOPY_MD5:
+      data.glib = g_checksum_new (G_CHECKSUM_MD5);
+      break;
+    case CHECKCOPY_SHA1:
+      data.glib = g_checksum_new (G_CHECKSUM_SHA1);
+      break;
+    case CHECKCOPY_SHA256:
+      data.glib = g_checksum_new (G_CHECKSUM_SHA256);
+      break;
+    case CHECKCOPY_CRC32:
+      data.zlib.raw = crc32 (0L, NULL, 0);
+      break;
+    default:
+      g_critical ("Invalid checksum type");
+  }
+
+  return data;
+}
+
+static void
+checksum_update (CheckcopyChecksumType type, ChecksumData *data,
+                 void *buffer, gssize nread)
+{
+  switch (type) {
+    case CHECKCOPY_MD5:
+    case CHECKCOPY_SHA1:
+    case CHECKCOPY_SHA256:
+      g_checksum_update (data->glib, buffer, nread);
+      break;
+    case CHECKCOPY_CRC32:
+      data->zlib.raw = crc32 (data->zlib.raw, buffer, nread);
+      break;
+    default:
+      g_critical ("Invalid checksum type");
+  }
+}
+
+static const char *
+checksum_get_string (CheckcopyChecksumType type, ChecksumData data)
+{
+  switch (type) {
+    case CHECKCOPY_MD5:
+    case CHECKCOPY_SHA1:
+    case CHECKCOPY_SHA256:
+      if (data.glib)
+        return g_checksum_get_string (data.glib);
+      else {
+        g_critical ("Requested checksum which was not computed");
+
+        return NULL;
+      }
+    case CHECKCOPY_CRC32:
+      if (data.zlib.string) {
+        return data.zlib.string;
+      } else if (data.zlib.raw != 0L) {
+        g_warning ("FIXME: actually print the hex string");
+
+        data.zlib.string = g_strdup_printf ("%lu", data.zlib.raw);
+
+        return data.zlib.string;
+      } else {
+        return NULL;
+      }
+    default:
+      g_critical ("Invalid checksum type");
+  }
+}
+
 
 /*******************/
 /*- public methods-*/
 /*******************/
 
 const gchar *
-checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
+checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream, CheckcopyChecksumType type)
 {
   CheckcopyInputStreamPrivate *priv = GET_PRIVATE (stream);
   GFilterInputStream *filter = G_FILTER_INPUT_STREAM (stream);
@@ -214,7 +331,7 @@ checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
   const gchar *checksum;
 
   if (g_input_stream_is_closed (base)) {
-    checksum = g_checksum_get_string (priv->checksum);
+    checksum = checksum_get_string (type, priv->checksum[type]);
   } else {
     checksum = NULL;
   }
@@ -223,7 +340,7 @@ checkcopy_input_stream_get_checksum (CheckcopyInputStream * stream)
 }
 
 CheckcopyInputStream*
-checkcopy_input_stream_new (GInputStream *in, GChecksumType type)
+checkcopy_input_stream_new (GInputStream *in, CheckcopyChecksumType type)
 {
   return g_object_new (CHECKCOPY_TYPE_INPUT_STREAM,
                        "base-stream", in,

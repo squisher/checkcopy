@@ -17,6 +17,7 @@ checkcopy_headers = 				\
 	checkcopy-file-info.h			\
 	checkcopy-file-list.h			\
 	checkcopy-details-window.h		\
+	checkcopy-checksum-types.h		\
 	checkcopy-traversal.h
 
 checkcopy_SOURCES = 				\

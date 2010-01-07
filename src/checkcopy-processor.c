@@ -368,7 +368,7 @@ process_file (CheckcopyProcessor *proc, GFile *file, GFileInfo *info, GFile * ds
     }
 
     if (r) {
-      checksum = checkcopy_input_stream_get_checksum (cin);
+      checksum = checkcopy_input_stream_get_checksum (cin, checksum_type);
 
       checkcopy_file_list_check_file (base->list, relname, checksum, checksum_type);
     }
