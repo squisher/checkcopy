@@ -40,6 +40,7 @@ static GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
 static void mark_not_found (gpointer key, gpointer value, gpointer data);
 static gboolean verify_list_filter (gconstpointer data);
 static gboolean keep_checksum_stats (CheckcopyFileStatus status, const CheckcopyFileInfo * info);
+static gint parse_checksum_file_regular (CheckcopyFileList * list, GFile *root, gchar *prefix, GDataInputStream * in);
 
 /*- globals -*/
 
@@ -257,29 +258,18 @@ get_checksum_stream (CheckcopyFileList * list, GFile * dest)
   }
 }
 
-/*******************/
-/*- public methods-*/
-/*******************/
-
-gint
-checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file)
+static gint
+parse_checksum_file_regular (CheckcopyFileList * list, GFile *root, gchar *prefix, GDataInputStream * in)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
-  GDataInputStream * in;
+
   gchar * line;
   gsize length;
   GCancellable *cancel;
   GError * error = NULL;
-  GFile * parent;
-  gchar * prefix;
   gint n = 0;
 
   cancel = checkcopy_get_cancellable ();
-
-  parent = g_file_get_parent (file);
-  prefix = g_file_get_relative_path (root, parent);
-
-  in = g_data_input_stream_new (G_INPUT_STREAM (g_file_read (file, cancel, &error)));
 
   while ((line = g_data_input_stream_read_line (in,
                                                 &length,
@@ -369,6 +359,30 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
 
     g_free (line);
   }
+
+  return n;
+}
+
+/*******************/
+/*- public methods-*/
+/*******************/
+
+gint
+checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, GFile *file)
+{
+  GDataInputStream * in;
+  GFile * parent;
+  gchar * prefix;
+  GCancellable *cancel;
+  GError * error = NULL;
+  gint n;
+
+  parent = g_file_get_parent (file);
+  prefix = g_file_get_relative_path (root, parent);
+
+  in = g_data_input_stream_new (G_INPUT_STREAM (g_file_read (file, cancel, &error)));
+
+  n = parse_checksum_file_regular (list, root, prefix, in);
 
   g_object_unref (parent);
   g_free (prefix);
