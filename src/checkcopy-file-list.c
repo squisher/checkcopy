@@ -289,12 +289,14 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
     gchar *c;
 
     if (*line == ';' || *line == '#') {
-      /* skip comments */
+      /* skip comment lines */
       continue;
     }
 
+    /* find the end of the first column */
     for (c = line; *c != ' ' && *c != '\0'; c++);
 
+    /* make sure we found some chars and we don't just have one column */
     if (c != line && *c != '\0') {
       gchar * checksum = NULL;
       gchar * filename = NULL;
