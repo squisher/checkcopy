@@ -52,11 +52,16 @@ typedef struct {
   GObjectClass parent_class;
 } CheckcopyFileListClass;
 
+typedef enum {
+  CHECKCOPY_FILE_LIST_COUNT_VERIFIED,
+  CHECKCOPY_FILE_LIST_COUNT_COPIED,
+  CHECKCOPY_FILE_LIST_COUNT_FAILED,
+  CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND,
+  CHECKCOPY_FILE_LIST_COUNT_LAST,
+} CheckcopyFileListCount;
+
 typedef struct {
-  guint copied;
-  guint verified;
-  guint failed;
-  guint not_found;
+  guint count[CHECKCOPY_FILE_LIST_COUNT_LAST];
 } CheckcopyFileListStats;
 
 GType checkcopy_file_list_get_type (void);
@@ -72,8 +77,9 @@ void checkcopy_file_list_mark_failed (CheckcopyFileList * list, gchar * relname)
 gboolean checkcopy_file_list_transition (CheckcopyFileList * list,
                                                 CheckcopyFileInfo * info, CheckcopyFileStatus new_status);
 
-GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
-const CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
+GList * checkcopy_file_list_get_display_list (CheckcopyFileList * list);
+CheckcopyFileListStats * checkcopy_file_list_get_stats (CheckcopyFileList * list);
+CheckcopyFileStatus checkcopy_file_list_status_to_info(CheckcopyFileListCount i);
 void checkcopy_file_list_sweep (CheckcopyFileList * list);
 
 CheckcopyFileList* checkcopy_file_list_get_instance (void);

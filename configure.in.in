@@ -33,7 +33,7 @@ XDT_CHECK_PACKAGE([GTHREAD], [gthread-2.0], [2.6.0])
 XDT_CHECK_PACKAGE([GTK], [gtk+-2.0], [2.10.0])
 XDT_CHECK_PACKAGE([XFCE], [gtk+-2.0], [2.10.0])
 XDT_CHECK_PACKAGE([LIBXFCE4UTIL], [libxfce4util-1.0], [4.4.0])
-XDT_CHECK_PACKAGE([GIO], [gio-unix-2.0], [2.22.0])
+XDT_CHECK_PACKAGE([GIO], [gio-unix-2.0], [2.20.0])
 
 dnl Check for zlib, taken from libxml2
 _cppflags="${CPPFLAGS}"
@@ -114,6 +114,7 @@ AC_CONFIG_FILES([
   Makefile
   po/Makefile.in
   src/Makefile
+  tests/Makefile
 ])
 
 AC_OUTPUT

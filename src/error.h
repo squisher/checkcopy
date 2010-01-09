@@ -29,7 +29,9 @@ enum {
   CHECKCOPY_ERROR_INVALID_STATE_CHANGE,
 };
 
+#if 0
 gboolean error_init();
+#endif
 void error_add_dialog (ProgressDialog *progress);
 void show_error (char *fmt, ...);
 void show_error_full (gchar * file, gint line, gboolean abortable, char *fmt, ...);
@@ -41,7 +43,9 @@ void thread_show_error_full (gchar * file, gint line, char *fmt, ...);
   thread_show_gerror_full (__FILE__, __LINE__, (file), (error))
 void thread_show_gerror_full (gchar * srcfile, gint line, GFile * file, GError *error);
 
+#if 0
 gboolean error_has_occurred ();
+#endif
 GQuark checkcopy_error_quark ();
 
 #endif /*  __ERROR_H__ */

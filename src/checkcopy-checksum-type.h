@@ -15,35 +15,26 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+#ifndef _HAVE_CHECKCOPY_CHECKSUM_TYPE
+#define _HAVE_CHECKCOPY_CHECKSUM_TYPE
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <gio/gio.h>
 
-#include "checkcopy-cancel.h"
+G_BEGIN_DECLS
 
+/* KEEP ORDER IN SYNC WITH
+ * checksum_type_lengths IN checkcopy-file-info.c
+ */
+typedef enum {
+  CHECKCOPY_NO_CHECKSUM,
+  CHECKCOPY_MD5,
+  CHECKCOPY_SHA1,
+  CHECKCOPY_SHA256,
+  CHECKCOPY_CRC32,
+  /* Insert new checksum types here */
+  CHECKCOPY_ALL_CHECKSUMS,
+} CheckcopyChecksumType;
 
-static GCancellable *cancel = NULL;
+G_END_DECLS
 
-
-/* public */
-
-void
-checkcopy_cancel_init (void)
-{
-  g_assert (cancel == NULL);
-
-  cancel = g_cancellable_new();
-}
-
-GCancellable *
-checkcopy_get_cancellable (void)
-{
-  return cancel;
-}
-
-void
-checkcopy_cancel (void)
-{
-  g_cancellable_cancel (cancel);
-}
+#endif /* _HAVE_CHECKCOPY_CHECKSUM_TYPE */

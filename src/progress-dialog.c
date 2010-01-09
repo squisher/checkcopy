@@ -52,7 +52,7 @@ typedef struct
   GtkWidget *file_label;
   GtkWidget *button_close;
   GtkWidget *button_details;
-  GtkWidget *entry_not_found, *entry_copied, *entry_verified, *entry_failed;
+  GtkWidget *stats_entry[CHECKCOPY_FILE_LIST_COUNT_LAST];
 
   CheckcopyDetailsWindow *details;
   CheckcopyFileList * list;
@@ -92,6 +92,7 @@ static void cb_cancel (GCancellable *cancel, ProgressDialog * dialog);
 static gboolean cb_delete (ProgressDialog * dialog, GdkEvent * event, gpointer data);
 static gboolean cb_update_progress (gpointer data);
 static void set_update (ProgressDialog * dialog, gboolean enabled);
+static void update_stat_labels (ProgressDialog * dialog);
 
 static GtkWidget * stats_label_new (const gchar * tooltip, GtkWidget *label);
 static void update_progress (ProgressDialog * dialog);
@@ -109,6 +110,26 @@ enum
   PROP_SIZE,
   PROP_VERIFY_ONLY,
   PROP_NUM_FILES,
+};
+
+enum
+{
+  SIGNAL_DONE,
+  N_SIGNALS
+};
+
+gchar *stats_text[] = {
+  N_("Verified:"),
+  N_("Created:"),
+  N_("Failed:"),
+  N_("Not found:"),
+};
+
+gchar *stats_tooltip[] = {
+  N_("Number of file(s) which were copied and verified successfully"),
+  N_("Number of file(s) which were copied successfully but not verified by a checksum"),
+  N_("Number of file(s) which failed copying and/or verification"),
+  N_("Number of file(s) which were mentioned in a checksum file, but were not found"),
 };
 
 /*                                    */
@@ -138,6 +159,7 @@ progress_dialog_status_get_type (void)
 /* progress dialog class */
 /*                       */
 static GtkWindowClass *parent_class = NULL;
+static guint signals[N_SIGNALS];
 
 GType
 progress_dialog_get_type (void)
@@ -168,6 +190,11 @@ static void
 progress_dialog_class_init (ProgressDialogClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+  signals[SIGNAL_DONE] = g_signal_new ("done", G_TYPE_FROM_CLASS (klass),
+                                       G_SIGNAL_RUN_FIRST, 0, NULL, NULL,
+                                       g_cclosure_marshal_VOID__OBJECT,
+                                       G_TYPE_NONE, 1, G_TYPE_FROM_CLASS (klass), NULL);
 
   parent_class = g_type_class_peek_parent (klass);
 
@@ -203,6 +230,8 @@ progress_dialog_init (ProgressDialog * obj)
   GtkWidget *align;
   GtkWidget *sep;
   GtkWidget *entry;
+
+  gint i;
 
   priv->list = checkcopy_file_list_get_instance ();
 
@@ -265,43 +294,18 @@ progress_dialog_init (ProgressDialog * obj)
   gtk_container_add (GTK_CONTAINER (align), statbox);
   gtk_widget_show (statbox);
 
-  label = gtk_label_new (_("Verified:"));
-  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
-  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
-  gtk_widget_show (label);
+  /* -- */
+  for (i = 0; i < CHECKCOPY_FILE_LIST_COUNT_LAST; i++ ) {
+    label = gtk_label_new (_(stats_text[i]));
+    gtk_misc_set_padding (GTK_MISC (label), 4, 0);
+    gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
+    gtk_widget_show (label);
 
-  priv->entry_verified = entry = stats_label_new (_("Number of file(s) which were copied and verified successfully"),
-                                                  label);
-  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
-  gtk_widget_show (entry);
-
-  label = gtk_label_new (_("Created:"));
-  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
-  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
-  gtk_widget_show (label);
-
-  priv->entry_copied = entry = stats_label_new (_("Number of file(s) which were copied successfully but not verified by a checksum"), label);
-  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
-  gtk_widget_show (entry);
-
-  label = gtk_label_new (_("Failed:"));
-  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
-  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
-  gtk_widget_show (label);
-
-  priv->entry_failed = entry = stats_label_new (_("Number of file(s) which failed copying and/or verification"),
-                                                label);
-  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
-  gtk_widget_show (entry);
-
-  label = gtk_label_new (_("Not found:"));
-  gtk_misc_set_padding (GTK_MISC (label), 4, 0);
-  gtk_box_pack_start (GTK_BOX (statbox), label, FALSE, FALSE, 0);
-  gtk_widget_show (label);
-
-  priv->entry_not_found = entry = stats_label_new (_("Number of file(s) which were mentioned in a checksum file, but were not found"), label);
-  gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
-  gtk_widget_show (entry);
+    priv->stats_entry[i] = entry = stats_label_new (_(stats_tooltip[i]),
+                                                    label);
+    gtk_box_pack_start (GTK_BOX (statbox), entry, FALSE, FALSE, 0);
+    gtk_widget_show (entry);
+  }
 
   /* close button */
   priv->button_close = gtk_button_new_from_stock (GTK_STOCK_CANCEL);
@@ -327,7 +331,9 @@ progress_dialog_init (ProgressDialog * obj)
   if (g_cancellable_is_cancelled (cancel)) {
     cb_cancel (cancel, obj);
   } else {
+#if 0
     g_cancellable_connect (cancel, G_CALLBACK (cb_cancel), obj, NULL);
+#endif
   }
 }
 
@@ -547,41 +553,35 @@ update_stat_labels (ProgressDialog * dialog)
 {
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
-  const CheckcopyFileListStats * stats;
+  CheckcopyFileListStats * stats;
   gchar *s;
   const gchar fmt[] = "%4d";
   GdkColor color;
   const gchar * color_str;
+  gint i;
 
   stats = checkcopy_file_list_get_stats (priv->list);
 
-  s = g_strdup_printf (fmt, stats->copied);
-  gtk_entry_set_text (GTK_ENTRY (priv->entry_copied), s);
-  g_free (s);
+  for (i = 0; i < CHECKCOPY_FILE_LIST_COUNT_LAST; i++) {
+    s = g_strdup_printf (fmt, stats->count[i]);
+    gtk_entry_set_text (GTK_ENTRY (priv->stats_entry[i]), s);
+    g_free (s);
 
-  if (stats->not_found > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_NOT_FOUND)) != NULL) {
-    gdk_color_parse (color_str, &color);
-    gtk_widget_modify_base (priv->entry_not_found, GTK_STATE_NORMAL, &color);
-  }
-  s = g_strdup_printf (fmt, stats->not_found);
-  gtk_entry_set_text (GTK_ENTRY (priv->entry_not_found), s);
-  g_free (s);
+    if (stats->count[i] > 0) {
+      if ((color_str = checkcopy_file_info_status_color (checkcopy_file_list_status_to_info(i))) != NULL) {
+        gdk_color_parse (color_str, &color);
+        gtk_widget_modify_base (priv->stats_entry[i], GTK_STATE_NORMAL, &color);
+      }
+      gtk_widget_set_sensitive (priv->stats_entry[i], TRUE);
+    } else {
+      /* not_found == 0 */
 
-  if (stats->verified > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFIED)) != NULL) {
-    gdk_color_parse (color_str, &color);
-    gtk_widget_modify_base (priv->entry_verified, GTK_STATE_NORMAL, &color);
-  }
-  s = g_strdup_printf (fmt, stats->verified);
-  gtk_entry_set_text (GTK_ENTRY (priv->entry_verified), s);
-  g_free (s);
+      gtk_widget_set_sensitive (priv->stats_entry[i], FALSE);
+    }
 
-  if (stats->failed > 0 && (color_str = checkcopy_file_info_status_color (CHECKCOPY_STATUS_VERIFICATION_FAILED)) != NULL) {
-    gdk_color_parse (color_str, &color);
-    gtk_widget_modify_base (priv->entry_failed, GTK_STATE_NORMAL, &color);
-  }
-  s = g_strdup_printf (fmt, stats->failed);
-  gtk_entry_set_text (GTK_ENTRY (priv->entry_failed), s);
-  g_free (s);
+  } /* end for */
+
+  g_free (stats);
 }
 
 /* callbacks */
@@ -607,7 +607,7 @@ cb_details_clicked (GtkButton * button, ProgressDialog * dialog)
   ProgressDialogPrivate *priv = PROGRESS_DIALOG_GET_PRIVATE (dialog);
 
   g_object_set (G_OBJECT (priv->details), "file-info-list",
-                checkcopy_file_list_get_sorted_list (priv->list), NULL);
+                checkcopy_file_list_get_display_list (priv->list), NULL);
 
   gtk_widget_show (GTK_WIDGET (priv->details));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009     David Mohr <david@mcbf.net>
+ *  Copyright (C) 2009 David Mohr <david@mcbf.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,36 +14,20 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *
  */
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#ifndef __OMPA_LIST__
+#define __OMPA_LIST__
 
-#include "checkcopy-cancel.h"
+#include <glib.h>
 
+G_BEGIN_DECLS
 
-static GCancellable *cancel = NULL;
+typedef gboolean (*OmpaFilterFunc) (gconstpointer v);
 
+GList * ompa_list_filter (GList * list, OmpaFilterFunc filter);
 
-/* public */
+G_END_DECLS
 
-void
-checkcopy_cancel_init (void)
-{
-  g_assert (cancel == NULL);
-
-  cancel = g_cancellable_new();
-}
-
-GCancellable *
-checkcopy_get_cancellable (void)
-{
-  return cancel;
-}
-
-void
-checkcopy_cancel (void)
-{
-  g_cancellable_cancel (cancel);
-}
+#endif /* __OMPA_LIST__ */

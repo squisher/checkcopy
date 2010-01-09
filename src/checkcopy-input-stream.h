@@ -23,6 +23,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include "checkcopy-checksum-type.h"
+
 G_BEGIN_DECLS
 
 #define CHECKCOPY_TYPE_INPUT_STREAM checkcopy_input_stream_get_type()
@@ -52,8 +54,8 @@ typedef struct {
 
 GType checkcopy_input_stream_get_type (void);
 
-CheckcopyInputStream* checkcopy_input_stream_new (GInputStream *in, GChecksumType type);
-const gchar * checkcopy_input_stream_get_checksum (CheckcopyInputStream * in);
+CheckcopyInputStream* checkcopy_input_stream_new (GInputStream *in, CheckcopyChecksumType type);
+const gchar * checkcopy_input_stream_get_checksum (CheckcopyInputStream * in, CheckcopyChecksumType type);
 
 G_END_DECLS
 

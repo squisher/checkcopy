@@ -30,12 +30,16 @@
 #include "checkcopy-cancel.h"
 #include "error.h"
 #include "checkcopy-worker.h"
+#include "ompa-list.h"
 
 /*- private prototypes -*/
 
 static GObject * checkcopy_file_list_constructor (GType type, guint n_construct_params, GObjectConstructParam * construct_params);
 static GOutputStream * get_checksum_stream (CheckcopyFileList * list, GFile * dest);
+static GList * checkcopy_file_list_get_sorted_list (CheckcopyFileList * list);
 static void mark_not_found (gpointer key, gpointer value, gpointer data);
+static gboolean verify_list_filter (gconstpointer data);
+static gboolean keep_checksum_stats (CheckcopyFileStatus status, const CheckcopyFileInfo * info);
 
 /*- globals -*/
 
@@ -69,6 +73,7 @@ struct _CheckcopyFileListPrivate {
 
   gboolean verify_only;
 
+  GMutex * stats_mutex;
   CheckcopyFileListStats stats;
 };
 
@@ -131,6 +136,8 @@ checkcopy_file_list_init (CheckcopyFileList *self)
   CheckcopyFileListPrivate *priv = GET_PRIVATE (self);
 
   priv->files_hash = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, (GDestroyNotify) checkcopy_file_info_free);
+
+  priv->stats_mutex = g_mutex_new ();
 }
 
 static GObject *
@@ -282,12 +289,14 @@ checksum_file_list_parse_checksum_file (CheckcopyFileList * list, GFile *root, G
     gchar *c;
 
     if (*line == ';' || *line == '#') {
-      /* skip comments */
+      /* skip comment lines */
       continue;
     }
 
+    /* find the end of the first column */
     for (c = line; *c != ' ' && *c != '\0'; c++);
 
+    /* make sure we found some chars and we don't just have one column */
     if (c != line && *c != '\0') {
       gchar * checksum = NULL;
       gchar * filename = NULL;
@@ -566,7 +575,7 @@ checkcopy_file_list_write_checksum (CheckcopyFileList * list, GFile * dest)
   return out != NULL;
 }
 
-GList *
+static GList *
 checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
@@ -575,17 +584,74 @@ checkcopy_file_list_get_sorted_list (CheckcopyFileList * list)
 
   file_list = g_hash_table_get_values (priv->files_hash);
 
+  file_list = g_list_copy (file_list);
+
   file_list = g_list_sort (file_list, (GCompareFunc) checkcopy_file_info_cmp);
 
   return file_list;
 }
 
-const CheckcopyFileListStats *
+static gboolean
+keep_checksum_stats (CheckcopyFileStatus status, const CheckcopyFileInfo * info)
+{
+  return (status != CHECKCOPY_STATUS_COPIED) || !info->checksum_file;
+}
+
+static gboolean
+verify_list_filter (gconstpointer data)
+{
+  const CheckcopyFileInfo * info = data;
+
+  return keep_checksum_stats (info->status, info);
+}
+
+GList *
+checkcopy_file_list_get_display_list (CheckcopyFileList * list)
+{
+  CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
+
+  GList * file_list;
+
+  file_list = g_hash_table_get_values (priv->files_hash);
+
+  file_list = g_list_copy (file_list);
+
+  if (priv->verify_only) {
+    /* Filter out the checksums of the checksum files.
+     * Usually you expect them not to have a checksum */
+    file_list = ompa_list_filter (file_list, verify_list_filter);
+  }
+
+  return file_list;
+}
+
+CheckcopyFileListStats *
 checkcopy_file_list_get_stats (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
 
-  return &(priv->stats);
+  CheckcopyFileListStats * stats;
+
+  g_mutex_lock (priv->stats_mutex);
+  stats = g_memdup (&(priv->stats), sizeof (CheckcopyFileListStats));
+  g_mutex_unlock (priv->stats_mutex);
+
+  return stats;
+}
+
+CheckcopyFileStatus
+checkcopy_file_list_status_to_info (CheckcopyFileListCount i)
+{
+  switch (i) {
+    case CHECKCOPY_FILE_LIST_COUNT_COPIED:
+      return CHECKCOPY_STATUS_COPIED;
+    case CHECKCOPY_FILE_LIST_COUNT_VERIFIED:
+      return CHECKCOPY_STATUS_VERIFIED;
+    case CHECKCOPY_FILE_LIST_COUNT_FAILED:
+      return CHECKCOPY_STATUS_FAILED;
+    case CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND:
+      return CHECKCOPY_STATUS_NOT_FOUND;
+  }
 }
 
 static void
@@ -625,6 +691,8 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
   g_assert (info != NULL);
   g_return_val_if_fail (new_status < CHECKCOPY_STATUS_LAST, FALSE);
 
+  g_mutex_lock (priv->stats_mutex);
+
   switch (info->status) {
     case CHECKCOPY_STATUS_NONE:
       if (new_status == CHECKCOPY_STATUS_FOUND ||
@@ -648,7 +716,7 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
           new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
           new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.not_found--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND]--;
       }
       break;
     case CHECKCOPY_STATUS_COPIED:
@@ -656,25 +724,28 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
           new_status == CHECKCOPY_STATUS_VERIFICATION_FAILED ||
           new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.copied--;
+
+        if (keep_checksum_stats (info->status, info)) {
+          priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]--;
+        }
       }
       break;
     case CHECKCOPY_STATUS_VERIFIED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.verified--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_VERIFIED]--;
       }
       break;
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.failed--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]--;
       }
       break;
     case CHECKCOPY_STATUS_FAILED:
       if (new_status == CHECKCOPY_STATUS_FAILED) {
         r = TRUE;
-        priv->stats.failed--;
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]--;
         g_warning ("Change from failed to failed is redundant");
       }
       break;
@@ -692,17 +763,19 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
       // do nothing
       break;
     case CHECKCOPY_STATUS_NOT_FOUND:
-      priv->stats.not_found++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND]++;
       break;
     case CHECKCOPY_STATUS_COPIED:
-      priv->stats.copied++;
+      if (keep_checksum_stats (new_status, info)) {
+        priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_COPIED]++;
+      }
       break;
     case CHECKCOPY_STATUS_VERIFIED:
-      priv->stats.verified++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_VERIFIED]++;
       break;
     case CHECKCOPY_STATUS_VERIFICATION_FAILED:
     case CHECKCOPY_STATUS_FAILED:
-      priv->stats.failed++;
+      priv->stats.count[CHECKCOPY_FILE_LIST_COUNT_FAILED]++;
       break;
     case CHECKCOPY_STATUS_MARKER_PROCESSED:
     case CHECKCOPY_STATUS_LAST:
@@ -710,9 +783,10 @@ checkcopy_file_list_transition (CheckcopyFileList * list,
       g_critical ("Invalid new state %d", new_status);
       break;
   }
+  g_mutex_unlock (priv->stats_mutex);
 
   if (!r) {
-    g_critical ("Invalid state change: %d -> %d", info->status, new_status);
+    g_error ("Invalid state change: %d -> %d", info->status, new_status);
   } else {
     DBG ("Status change for %s from %d -> %d", info->relname, info->status, new_status);
     info->status = new_status;

@@ -33,14 +33,17 @@ static gchar * checksum_type_extensions [] = {
   "sha",
   "sha1",
   "sha256",
+  "sfv",
   "CHECKSUM",
   NULL /* last */
 };
 
 static int checksum_type_lengths [] = {
+  -1,
   32,
   40,
   64,
+  6,
   0, /* NO_CHECKSUM, has to be last */
 }; /* SAME order as CheckcopyChecksumType */
 
@@ -119,7 +122,7 @@ checkcopy_file_info_free (CheckcopyFileInfo *info)
 }
 
 gboolean
-checkcopy_file_info_is_checksum_file (GFile *file)
+checkcopy_file_info_is_checksum_file (CheckcopyFileInfo * info, GFile *file)
 {
   gchar * uri;
   int i;
@@ -136,6 +139,7 @@ checkcopy_file_info_is_checksum_file (GFile *file)
   }
 
   g_free (uri);
+  info->checksum_file = r;
 
   return r;
 }

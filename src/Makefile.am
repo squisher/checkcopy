@@ -5,6 +5,7 @@ INCLUDES = 					\
 bin_PROGRAMS = checkcopy
 checkcopy_headers = 				\
 	error.h					\
+	ompa-list.h				\
 	progress-dialog.h			\
 	checkcopy-cancel.h			\
 	checkcopy-file-handler.h		\
@@ -16,10 +17,12 @@ checkcopy_headers = 				\
 	checkcopy-file-info.h			\
 	checkcopy-file-list.h			\
 	checkcopy-details-window.h		\
+	checkcopy-checksum-types.h		\
 	checkcopy-traversal.h
 
 checkcopy_SOURCES = 				\
 	$(checkcopy_headers)			\
+	ompa-list.c				\
 	checkcopy-main.c			\
 	error.c					\
 	progress-dialog.c			\
