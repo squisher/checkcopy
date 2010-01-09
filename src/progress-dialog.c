@@ -112,6 +112,12 @@ enum
   PROP_NUM_FILES,
 };
 
+enum
+{
+  SIGNAL_DONE,
+  N_SIGNALS
+};
+
 gchar *stats_text[] = {
   N_("Verified:"),
   N_("Created:"),
@@ -153,6 +159,7 @@ progress_dialog_status_get_type (void)
 /* progress dialog class */
 /*                       */
 static GtkWindowClass *parent_class = NULL;
+static guint signals[N_SIGNALS];
 
 GType
 progress_dialog_get_type (void)
@@ -183,6 +190,11 @@ static void
 progress_dialog_class_init (ProgressDialogClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+  signals[SIGNAL_DONE] = g_signal_new ("done", G_TYPE_FROM_CLASS (klass),
+                                       G_SIGNAL_RUN_FIRST, 0, NULL, NULL,
+                                       g_cclosure_marshal_VOID__OBJECT,
+                                       G_TYPE_NONE, 1, G_TYPE_FROM_CLASS (klass), NULL);
 
   parent_class = g_type_class_peek_parent (klass);
 
