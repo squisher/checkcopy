@@ -607,7 +607,10 @@ checkcopy_file_list_sweep (CheckcopyFileList * list)
 {
   CheckcopyFileListPrivate *priv = GET_PRIVATE (list);
 
-  g_hash_table_foreach (priv->files_hash, mark_not_found, list);
+  if (priv->verify_only) {
+    DBG ("Marking files which were not found...");
+    g_hash_table_foreach (priv->files_hash, mark_not_found, list);
+  }
 }
 
 gboolean

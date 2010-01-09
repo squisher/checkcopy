@@ -813,7 +813,7 @@ progress_dialog_thread_check_stats (ProgressDialog * dialog)
 
     stats = checkcopy_file_list_get_stats (priv->list);
 
-    stats_total = stats->copied + stats->failed + stats->verified;
+    stats_total = stats->copied + stats->failed + stats->verified + stats->not_found;
 
     if (stats_total != priv->num_files) {
       g_warning ("Total number of files is %u, but stats were recorded for only %u",
