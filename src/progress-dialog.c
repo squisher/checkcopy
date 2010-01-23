@@ -810,10 +810,14 @@ progress_dialog_thread_check_stats (ProgressDialog * dialog)
   if (priv->status == PROGRESS_DIALOG_STATUS_COMPLETED) {
     guint stats_total;
     const CheckcopyFileListStats * stats;
+    gint i;
 
     stats = checkcopy_file_list_get_stats (priv->list);
 
-    stats_total = stats->copied + stats->failed + stats->verified + stats->not_found;
+    stats_total = 0;
+    for (i=0; i<CHECKCOPY_FILE_LIST_COUNT_LAST; i++) {
+      stats_total = stats->count[i];
+    }
 
     if (stats_total != priv->num_files) {
       g_warning ("Total number of files is %u, but stats were recorded for only %u",

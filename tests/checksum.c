@@ -37,6 +37,8 @@ static CheckcopyFileInfo test_files[] = {
     CHECKCOPY_MD5, 0, FALSE, FALSE },
   { "data/COPYING", "ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6",
     CHECKCOPY_SHA256, 0, FALSE, FALSE },
+  { "data/COPYING", "1765105c",
+    CHECKCOPY_CRC32, 0, FALSE, FALSE },
   { NULL }
 };
 
@@ -64,13 +66,13 @@ input_stream_checksum(void)
     g_assert_no_error (error);
     g_assert (in != NULL);
 
-    cin = checkcopy_input_stream_new (in, checkcopy_checksum_type_to_gio (info->checksum_type));
+    cin = checkcopy_input_stream_new (in, CHECKCOPY_ALL_CHECKSUMS);
     g_assert (cin != NULL);
 
     for (read = -1; read != 0; )
     {
       gboolean r;
-      
+
       r = g_input_stream_read_all (G_INPUT_STREAM (cin),
                                   buffer, 8192,
                                   &read, NULL, &error);
@@ -80,7 +82,7 @@ input_stream_checksum(void)
     g_input_stream_close (G_INPUT_STREAM (cin), NULL, &error);
     g_assert_no_error (error);
 
-    checksum = checkcopy_input_stream_get_checksum (cin);
+    checksum = checkcopy_input_stream_get_checksum (cin, info->checksum_type);
     g_assert_cmpstr (checksum, ==, info->checksum);
   }
 }

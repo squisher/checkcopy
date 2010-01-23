@@ -651,7 +651,12 @@ checkcopy_file_list_status_to_info (CheckcopyFileListCount i)
       return CHECKCOPY_STATUS_FAILED;
     case CHECKCOPY_FILE_LIST_COUNT_NOT_FOUND:
       return CHECKCOPY_STATUS_NOT_FOUND;
+    case CHECKCOPY_FILE_LIST_COUNT_LAST:
+      /* this case should never happen, fall back to the critical below */
+      break;
   }
+  g_critical ("Invalid file list status");
+  return -1;
 }
 
 static void

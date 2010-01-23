@@ -93,7 +93,7 @@ static void
 checkcopy_input_stream_get_property (GObject *object, guint property_id,
                               GValue *value, GParamSpec *pspec)
 {
-  CheckcopyInputStreamPrivate *priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (object));
+  //CheckcopyInputStreamPrivate *priv = GET_PRIVATE (CHECKCOPY_INPUT_STREAM (object));
 
   switch (property_id) {
 #if 0
@@ -125,7 +125,7 @@ checkcopy_input_stream_set_property (GObject *object, guint property_id,
         int i;
 
         for (i=CHECKCOPY_NO_CHECKSUM+1; i<CHECKCOPY_ALL_CHECKSUMS; i++) {
-          priv->checksum[i] = checksum_new (type);
+          priv->checksum[i] = checksum_new (i);
         }
       }
     } break;
@@ -214,9 +214,7 @@ gssize   read_fn      (GInputStream        *stream,
   nread = g_input_stream_read (base_stream, buffer, count, cancellable, error);
 
   for (i=CHECKCOPY_NO_CHECKSUM+1; i<CHECKCOPY_ALL_CHECKSUMS; i++) {
-    if (priv->checksum[i].glib) {
-      checksum_update (i, &(priv->checksum[i]), buffer, nread);
-    }
+    checksum_update (i, &(priv->checksum[i]), buffer, nread);
   }
 
   return nread;
@@ -259,6 +257,7 @@ checksum_new (CheckcopyChecksumType type)
       break;
     case CHECKCOPY_CRC32:
       data.zlib.raw = crc32 (0L, NULL, 0);
+      data.zlib.string = NULL;
       break;
     default:
       g_critical ("Invalid checksum type");
@@ -292,9 +291,9 @@ checksum_get_string (CheckcopyChecksumType type, ChecksumData data)
     case CHECKCOPY_MD5:
     case CHECKCOPY_SHA1:
     case CHECKCOPY_SHA256:
-      if (data.glib)
+      if (data.glib) {
         return g_checksum_get_string (data.glib);
-      else {
+      } else {
         g_critical ("Requested checksum which was not computed");
 
         return NULL;
@@ -303,9 +302,7 @@ checksum_get_string (CheckcopyChecksumType type, ChecksumData data)
       if (data.zlib.string) {
         return data.zlib.string;
       } else if (data.zlib.raw != 0L) {
-        g_warning ("FIXME: actually print the hex string");
-
-        data.zlib.string = g_strdup_printf ("%lu", data.zlib.raw);
+        data.zlib.string = g_strdup_printf ("%08x", (guint) data.zlib.raw);
 
         return data.zlib.string;
       } else {
@@ -313,6 +310,7 @@ checksum_get_string (CheckcopyChecksumType type, ChecksumData data)
       }
     default:
       g_critical ("Invalid checksum type");
+      return NULL;
   }
 }
 

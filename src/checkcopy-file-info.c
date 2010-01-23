@@ -170,6 +170,10 @@ checkcopy_checksum_type_to_gio (CheckcopyChecksumType type)
       return G_CHECKSUM_SHA1;
     case CHECKCOPY_SHA256:
       return G_CHECKSUM_SHA256;
+    case CHECKCOPY_CRC32:
+    case CHECKCOPY_ALL_CHECKSUMS:
+      g_critical ("ChecksumType %d cannot be translated to GIO", type);
+      return -1;
     case CHECKCOPY_NO_CHECKSUM:
       g_error ("NO_CHECKSUM cannot be translated to GIO");
       return -1;
