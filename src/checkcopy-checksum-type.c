@@ -15,29 +15,27 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#ifndef _HAVE_CHECKCOPY_CHECKSUM_TYPE
-#define _HAVE_CHECKCOPY_CHECKSUM_TYPE
 
-#include <gio/gio.h>
+#include <glib.h>
 
-G_BEGIN_DECLS
+#include <libxfce4util/libxfce4util.h>
 
-/* KEEP ORDER IN SYNC WITH
- * checksum_type_lengths IN checkcopy-file-info.c
- * type_name IN checkcopy-checksum-type.c
- */
-typedef enum {
-  CHECKCOPY_NO_CHECKSUM,
-  CHECKCOPY_MD5,
-  CHECKCOPY_SHA1,
-  CHECKCOPY_SHA256,
-  CHECKCOPY_CRC32,
-  /* Insert new checksum types here */
-  CHECKCOPY_ALL_CHECKSUMS,
-} CheckcopyChecksumType;
+#include "checkcopy-checksum-type.h"
 
-const char * checkcopy_checksum_type_to_string (CheckcopyChecksumType type);
+static
+char *type_name[] = {
+  N_("No checksum"),
+  N_("MD5"),
+  N_("SHA1"),
+  N_("SHA256"),
+  N_("CRC32"),
+  N_("All checksums"),
+};
 
-G_END_DECLS
+const char *
+checkcopy_checksum_type_to_string (CheckcopyChecksumType type)
+{
+  g_assert (type <= CHECKCOPY_ALL_CHECKSUMS);
 
-#endif /* _HAVE_CHECKCOPY_CHECKSUM_TYPE */
+  return _(type_name[type]);
+}

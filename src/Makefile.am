@@ -36,6 +36,7 @@ checkcopy_SOURCES = 				\
 	checkcopy-file-info.c			\
 	checkcopy-file-list.c			\
 	checkcopy-details-window.c		\
+	checkcopy-checksum-type.c			\
 	checkcopy-traversal.c
 
 checkcopy_CFLAGS = 				\

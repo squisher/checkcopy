@@ -30,6 +30,7 @@
 #include "checkcopy-input-stream.h"
 
 typedef struct {
+  gboolean in_use;
   uLong raw;
   char * string;
 } Crc32Data;
@@ -256,6 +257,7 @@ checksum_new (CheckcopyChecksumType type)
       data.glib = g_checksum_new (G_CHECKSUM_SHA256);
       break;
     case CHECKCOPY_CRC32:
+      data.zlib.in_use = TRUE;
       data.zlib.raw = crc32 (0L, NULL, 0);
       data.zlib.string = NULL;
       break;
@@ -274,10 +276,14 @@ checksum_update (CheckcopyChecksumType type, ChecksumData *data,
     case CHECKCOPY_MD5:
     case CHECKCOPY_SHA1:
     case CHECKCOPY_SHA256:
-      g_checksum_update (data->glib, buffer, nread);
+      if (data->glib) {
+        g_checksum_update (data->glib, buffer, nread);
+      }
       break;
     case CHECKCOPY_CRC32:
-      data->zlib.raw = crc32 (data->zlib.raw, buffer, nread);
+      if (data->zlib.in_use) {
+        data->zlib.raw = crc32 (data->zlib.raw, buffer, nread);
+      }
       break;
     default:
       g_critical ("Invalid checksum type");

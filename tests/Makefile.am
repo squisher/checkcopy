@@ -7,12 +7,14 @@ bin_PROGRAMS = checksum
 
 checksum_headers = 				\
 	checkcopy-file-info.h			\
+	checkcopy-checksum-type.h		\
 	checkcopy-input-stream.h
 
 checksum_SOURCES = 				\
 	$(checksum_headers)			\
 	../src/checkcopy-input-stream.c		\
 	../src/checkcopy-file-info.c		\
+	../src/checkcopy-checksum-type.c	\
 	checksum.c
 
 checksum_CFLAGS = 				\
